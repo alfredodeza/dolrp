@@ -91,6 +91,7 @@ local function getHeaders(user_headers, content)
     return headers
 end
 
+-- XXX will not work with url.escape
 local function createQueryString( params )
     local queryString
     for k, v in pairs(params) do
@@ -256,7 +257,7 @@ end
 -- status, etc.
 --
 function M.getHostNameFromBucketName( bucketName )
-    return bucketName .. ".s3.amazonaws.com"
+    return bucketName .. ".objects.dreamhost.com"
 end
 
 --------------------------------------------------------------------------------
