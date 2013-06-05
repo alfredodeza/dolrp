@@ -108,6 +108,82 @@ end
 
 --------------------------------------------------------------------------------
 
+
+function DreamObjectsAPI.showBucketDialog( message )
+    logger:trace('showBucketDialog executing')
+	LrFunctionContext.callWithContext( 'DreamObjectsAPI.showBucketDialog', function( context )
+
+        logger:trace('inside context showBucketDialog executing')
+		local f = LrView.osFactory()
+
+		local properties = LrBinding.makePropertyTable( context )
+		properties.bucket = prefs.bucket
+
+		local contents = f:column {
+			bind_to_object = properties,
+			spacing = f:control_spacing(),
+			fill = 1,
+
+			f:static_text {
+				title = LOC "$$$/DreamObjects/BucketDialog/Message=In order to publish to DreamObjects you need to define a bucket.",
+				fill_horizontal = 1,
+				width_in_chars = 55,
+				height_in_lines = 2,
+				size = 'small',
+			},
+
+			message and f:static_text {
+				title = message,
+				fill_horizontal = 1,
+				width_in_chars = 55,
+				height_in_lines = 2,
+				size = 'small',
+				text_color = import 'LrColor'( 1, 0, 0 ),
+			} or 'skipped item',
+
+			f:row {
+				spacing = f:label_spacing(),
+
+				f:static_text {
+					title = LOC "$$$/DreamObjects/BucketDialog/Name=Bucket Name:",
+					alignment = 'right',
+					width = share 'title_width',
+				},
+
+				f:edit_field {
+					fill_horizonal = 1,
+					width_in_chars = 35,
+					value = bind 'bucket',
+				},
+			},
+
+		}
+
+		local result = LrDialogs.presentModalDialog {
+				title = LOC "$$$/DreamObjects/ApiKeyDialog/Title=Enter Your DreamObjects API Keys",
+				contents = contents,
+				accessoryView = f:push_button {
+					title = LOC "$$$/DreamObjects/ApiKeyDialog/GoToDreamObjects=Get DreamObjects API Keys...",
+					action = function()
+						LrHttp.openUrlInBrowser( "https://panel.dreamhost.com/index.cgi?tree=cloud.objects&" )
+					end
+				},
+			}
+
+
+		if result == 'ok' then
+			prefs.bucket = trim ( properties.bucket )
+		else
+			LrErrors.throwCanceled()
+		end
+
+	end )
+
+end
+
+--------------------------------------------------------------------------------
+
+
 -- We can't include a DreamObjects API key with the source code for this plug-in, so
 -- we require you obtain one on your own and enter it through this dialog.
 
@@ -278,7 +354,7 @@ function DreamObjectsAPI.callRestMethod( propertyTable, params )
 	end
 
 	params.api_sig = DreamObjectsAPI.makeApiSignature( params )
-	local url = string.format( 'http://%s.objects.dreamhost.com/%s', assert(params.bucket_name), assert(params.object_name))
+	local url = string.format( 'http://%s.objects.dreamhost.com/%s', assert(params.bucket), assert(params.object_name))
 
 	for name, value in pairs( params ) do
 

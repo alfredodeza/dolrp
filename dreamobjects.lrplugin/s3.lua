@@ -1,3 +1,116 @@
+--====================================================================--
+-- Module: s3
+--
+--    Copyright (C) 2012 Triple Dog Dare Games, Inc.  All Rights Reserved.
+--
+-- License:
+--
+--    Permission is hereby granted, free of charge, to any person obtaining a copy of
+--    this software and associated documentation files (the "Software"), to deal in the
+--    Software without restriction, including without limitation the rights to use, copy,
+--    modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
+--    and to permit persons to whom the Software is furnished to do so, subject to the
+--    following conditions:
+--
+--    The above copyright notice and this permission notice shall be included in all copies
+--    or substantial portions of the Software.
+--
+--    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+--    INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+--    PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE
+--    FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+--    OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+--    DEALINGS IN THE SOFTWARE.
+--
+-- Overview:
+--
+--    This module supports access to the Amazon Simple Storage Service (S3), a
+--    popular cloud-based storage platform, from Corona SDK applications.
+--
+--    For more information, see:
+--
+--        http://aws.amazon.com/s3/
+--        http://www.anscamobile.com/corona/
+--
+-- Usage:
+--
+--    local s3 = require("s3")
+--
+--    -- Set credentials
+--    s3.AWS_Access_Key_ID = "your_access_key"
+--    s3.AWS_Secret_Key    = "your_secret_key"
+--
+--    -- Get a bucket object
+--    local bucket = s3.getBucket("bucketName")
+--
+--    -- Get bucket contents
+--    --
+--    local status = bucket:list("/", "path/", 100)
+--    print("Found " .. #status.bucket.Contents .. " .. items in bucket")
+--
+--    -- Write some data to an S3 object, get it back, and delete the object
+--    --
+--    bucket:put("path/object.txt", "this is the object contents")
+--    status = bucket:get("path/object.txt")
+--    if not status.isError and status.response.code = 200 then
+--        print("Got bucket object contents: " .. status.response.body)
+--    end
+--    bucket:delete("path/object.txt")
+--
+--    -- Write a file to an S3 object and get a copy back
+--    --
+--    bucket:put_file("path/object.png", system.pathForFile("boulder.png", system.DocumentsDirectory))
+--    bucket:get_file("path/object.png", system.pathForFile("new_boulder.png", system.DocumentsDirectory))
+--
+--
+-- Notice:
+--
+--    This module currently uses the LuaSocket networking interfaces.  These are
+--    very well-designed and robust interfaces, but unfortunately they are all
+--    synchronous/blocking calls.  Some Lua environments provide multitasking (via
+--    LuaLanes and other methods), and in those environments the LuaSocket interfaces
+--    are a perfectly reasonable solution.  Unfortunately, Corona does not provide
+--    any multitasking support, and all application code is executed on the main user
+--    interface thread (meaning that your application will be non-responsive during
+--    network I/O).
+--
+--    In order to support asynchronouse/cancellable network I/O, this module uses a
+--    technique designed by Diego Nehab (the creator of LuaSocket) and implemented
+--    in the Lua module "dispatch".  It essentially blocks for 100ms at a time and
+--    yeilds back to the main event thread.  You may notice some slight jerkiness if
+--    there is a lot of UI activity happening during your network I/O, but in most
+--    cases this approach seems to work fine.  I'd like to thank Le Viet Bach of
+--    Rubycell .JSC for his original implementation of an http request using the
+--    dispatch method (in his "asyncHttp" module, a version of which is used here
+--    as "async_http").
+--
+--    It would be preferrable to use the Corona asynchronous I/O support, as it is
+--    truly asynchronous and supports https, but it is currently unusable for talking
+--    to REST APIs like S3 (no support for the required verbs such as HEAD, PUT, and
+--    DELETE, and no access to the HTTP response code, status, or headers, all of
+--    which are needed to interact with a REST service in a meaningful way).  I have
+--    entered a feature request to have this functionality added to the Corona async
+--    network.request method.  I originally attempted to at least support bucket
+--    list/get using the async network.request with GET, but found it to be buggy (it
+--    was non-functional on Windows, and produced corrupt files on Android).  I submitted
+--    a bug report regarding these bahviors.  If the Corona asynchronous I/O support
+--    is ever improved to support the required functionality, and it is stable on all
+--    platforms, then I will update the asynchronous request logic here to use it.
+--
+-- Testing Notes:
+--
+--    The unit tests below have been trimmed down substantially and will not work in
+--    your local environment without modification.  Since Amazon doesn't have any
+--    kind of test account or test fixture for S3, you will have to test against your
+--    own S3 bucket/account (and modify the tests accordingly).
+--
+--    For the sake of optimization, you will probably want to comment out the entire test
+--    block at the end of this module when your testing is complete.
+--
+--====================================================================--
+--
+
+
 local M = {}
 
 --local asynch_http = require("async_http")
@@ -7,8 +120,10 @@ local M = {}
 --local http = require("socket.http")
 --local url = require("socket.url")
 --local ltn12 = require("ltn12")
-
+local LrHttp = import "LrHttp"
 --local xml = require("xml")
+local logger = import 'LrLogger'( 'DreamObjectsAPI' )
+logger:enable( 'logfile' )
 
 local LrStringUtils = import 'LrStringUtils'
 local LrMD5 = import 'LrMD5'
@@ -24,7 +139,9 @@ local function sha1_hmac( key, text )
     -- Corona doesn't support SHA1 (or any other algorithms) on Windows.  We have to go to a
     -- pure Lua implementation of sha1_hmac on Windows so we can test/dev in the simulator.
     --
-    return (sha1.hmac_sha1_binary(key, text))
+    logger:trace(key)
+    logger:trace(text)
+    return (hmac_sha1_binary(key, text))
 end
 
 -- Compute and add the Amazon S3 REST authorization header, as specified here:
@@ -100,7 +217,8 @@ local function createQueryString( params )
         else
             queryString = "?"
         end
-        queryString = queryString .. k .. "=" .. url.escape(v)
+        --queryString = queryString .. k .. "=" .. url.escape(v)
+        queryString = queryString .. k .. "=" .. v
     end
     return queryString
 end
@@ -357,61 +475,84 @@ function M.getBucket( bucketName )
     ----------------------------------------------------------------------------
     --
     function s3_bucket:list( delimiter, prefix, max_keys, marker, onComplete )
-
-        -- Build the request
         local httpRequest = {
             method = "GET",
             url = "http://" .. self.host .. "/",
             headers = getHeaders(),
             proxy = PROXY,
         }
-        addAuthorizationHeader(httpRequest.method, self.bucketName, nil, httpRequest.headers)
 
-        -- Create request querystring from parameters
-        local listParams = {}
-        listParams["delimiter"] = delimiter
-        listParams["prefix"]    = prefix
-        listParams["max-keys"]  = max_keys
-        listParams["marker"]    = marker
-        httpRequest.url = appendQueryString(httpRequest.url, listParams)
+        local url = "http://" .. self.host .. "/"
 
-        local function createResultStatus( status )
-            if status.isError then
-                dbg("FAIL - bucket:list() request failed, reason: " .. status.errorMessage)
-                dumpHttpRequestResponse(status.request)
-            else
-                dumpHttpRequestResponse(status.request, status.response)
+        logger:trace(string.format("GET on url:: %s", url))
+        logger:trace(string.format("GET on dict url:: %s", httpRequest.url))
+        local result, hdrs = LrHttp.get(url, {})--headers)
+        logger:trace(string.format("Headers: %s", hdrs))
+        logger:trace(string.format("Status Code: %s", hdrs['status']))
+        logger:trace(string.format("result: %s", result))
+        return result
 
-                -- Convert the XML response body to a properly formed table
-                local xmlParser = xml.newParser()
-                local xmlResponse = xmlParser:ParseXmlText(status.response.body)
-                local bucketList = simplify_xml(xmlResponse)
+        -- Build the request
+        --local httpRequest = {
+        --    method = "GET",
+        --    url = "http://" .. self.host .. "/",
+        --    headers = getHeaders(),
+        --    proxy = PROXY,
+        --}
+        --addAuthorizationHeader(httpRequest.method, self.bucketName, nil, httpRequest.headers)
 
-                -- Make sure .Contents is always a collection (even if it only has one entry)
-                if bucketList.Contents and bucketList.Contents.Key then
-                    bucketList.Contents = { bucketList.Contents }
-                end
+        ---- Create request querystring from parameters
+        --local listParams = {}
+        --listParams["delimiter"] = delimiter
+        --listParams["prefix"]    = prefix
+        --listParams["max-keys"]  = max_keys
+        --listParams["marker"]    = marker
+        --httpRequest.url = appendQueryString(httpRequest.url, listParams)
 
-                -- Make sure .CommonPrefixes is always a collection (even if it has only one entry)
-                if bucketList.CommonPrefixes and bucketList.CommonPrefixes.Prefix  then
-                    bucketList.CommontPrefixes = { bucketList.CommonPrefixes }
-                end
+        --logger:trace(string.format("GET on url %s", httpRequest['url']))
+        --local result, hdrs = LrHttp.get(httpRequest['url'], headers)
+        --logger:trace(string.format("Headers: %s", hdrs))
+        --logger:trace(string.format("Status Code: %s", hdrs['status']))
+        --logger:trace(string.format("result: %s", result))
+        --return result
 
-                status.bucket = bucketList
-            end
+        --local function createResultStatus( status )
+        --    if status.isError then
+        --        dbg("FAIL - bucket:list() request failed, reason: " .. status.errorMessage)
+        --        dumpHttpRequestResponse(status.request)
+        --    else
+        --        dumpHttpRequestResponse(status.request, status.response)
 
-            return status
-        end
+        --        -- Convert the XML response body to a properly formed table
+        --        local xmlParser = xml.newParser()
+        --        local xmlResponse = xmlParser:ParseXmlText(status.response.body)
+        --        local bucketList = simplify_xml(xmlResponse)
 
-        if onComplete then
-            local function onRequestComplete( status )
-                onComplete(createResultStatus(status))
-            end
-            return asynch_http.request(httpRequest, onRequestComplete)
-        else
-            local status = asynch_http.request(httpRequest)
-            return createResultStatus(status)
-        end
+        --        -- Make sure .Contents is always a collection (even if it only has one entry)
+        --        if bucketList.Contents and bucketList.Contents.Key then
+        --            bucketList.Contents = { bucketList.Contents }
+        --        end
+
+        --        -- Make sure .CommonPrefixes is always a collection (even if it has only one entry)
+        --        if bucketList.CommonPrefixes and bucketList.CommonPrefixes.Prefix  then
+        --            bucketList.CommontPrefixes = { bucketList.CommonPrefixes }
+        --        end
+
+        --        status.bucket = bucketList
+        --    end
+
+        --    return status
+        --end
+
+        --if onComplete then
+        --    local function onRequestComplete( status )
+        --        onComplete(createResultStatus(status))
+        --    end
+        --    return asynch_http.request(httpRequest, onRequestComplete)
+        --else
+        --    local status = asynch_http.request(httpRequest)
+        --    return createResultStatus(status)
+        --end
 
     end
 
@@ -427,34 +568,37 @@ function M.getBucket( bucketName )
             proxy = PROXY,
         }
         addAuthorizationHeader(httpRequest.method, bucket.bucketName, objectName, httpRequest.headers)
+        logger:trace(string.format("GET on url %s", httpRequest['url']))
+        local result, hdrs = LrHttp.get(httpRequest['url'], headers)
+        return result
 
-        local responseFilePath = responseFilePath
-
-        local function createResultStatus( status )
-            if status.isError then
-                dbg("FAIL - bucket request failed, reason: " .. status.errorMessage)
-                dumpHttpRequestResponse(status.request)
-            else
-                if status.response.code == 200 and status.response.body and responseFilePath then
-                    -- We only want to save the body if it's a valid body response
-                    saveFile(status.response.body, responseFilePath)
-                    status.response.bodyFilePath = responseFilePath
-                end
-                dumpHttpRequestResponse(status.request, status.response)
-            end
-
-            return status
-        end
-
-        if onComplete then
-            local function onRequestComplete( status )
-                onComplete(createResultStatus(status))
-            end
-            return asynch_http.request(httpRequest, onRequestComplete)
-        else
-            local status = asynch_http.request(httpRequest)
-            return createResultStatus(status)
-        end
+--        local responseFilePath = responseFilePath
+--
+--        local function createResultStatus( status )
+--            if status.isError then
+--                dbg("FAIL - bucket request failed, reason: " .. status.errorMessage)
+--                dumpHttpRequestResponse(status.request)
+--            else
+--                if status.response.code == 200 and status.response.body and responseFilePath then
+--                    -- We only want to save the body if it's a valid body response
+--                    saveFile(status.response.body, responseFilePath)
+--                    status.response.bodyFilePath = responseFilePath
+--                end
+--                dumpHttpRequestResponse(status.request, status.response)
+--            end
+--
+--            return status
+--        end
+--
+--        if onComplete then
+--            local function onRequestComplete( status )
+--                onComplete(createResultStatus(status))
+--            end
+--            return asynch_http.request(httpRequest, onRequestComplete)
+--        else
+--            local status = asynch_http.request(httpRequest)
+--            return createResultStatus(status)
+--        end
     end
 
     ----------------------------------------------------------------------------
