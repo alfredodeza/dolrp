@@ -55,7 +55,7 @@ local function notLoggedIn( propertyTable )
 	propertyTable.accountStatus = LOC "$$$/DreamObjects/AccountStatus/NotLoggedIn=No valid keys"
 	propertyTable.loginButtonTitle = LOC "$$$/DreamObjects/LoginButton/NotLoggedIn=Add keys"
 	propertyTable.loginButtonEnabled = true
-	propertyTable.validAccount = false
+	propertyTable.validKeys = false
 
 end
 
@@ -64,6 +64,7 @@ local function noBucket( propertyTable )
     prefs.bucket = nil
 	propertyTable.bucketButtonTitle = LOC "$$$/DreamObjects/BucketButton/NoBucket=Add bucket"
 	propertyTable.bucketButtonEnabled = true
+	propertyTable.validBucket = false
 	propertyTable.bucketNameTitle = LOC "$$$/DreamObjects/BucketButton/NoBucket=Add bucket"
 	propertyTable.bucketStatus = LOC "$$$/DreamObjects/BucketButton/HasBucket=No valid bucket"
 
@@ -104,42 +105,10 @@ function DreamObjectsUser.add_bucket( propertyTable )
 		end )
 
 		-- Make sure we have an API key.
-
 		DreamObjectsAPI.getApiKeyAndSecret()
 
-		-- Show request for authentication dialog.
-        -- XXX we probably don't need to ask for permission
-		--local authRequestDialogResult = LrDialogs.confirm(
-		--	LOC "$$$/DreamObjects/AuthRequestDialog/Message=Lightroom needs your permission to upload images to DreamObjects.",
-		--	LOC "$$$/DreamObjects/AuthRequestDialog/HelpText=If you click Authorize, you will be taken to a web page in your web browser where you can log in. When you're finished, return to Lightroom to complete the authorization.",
-		--	LOC "$$$/DreamObjects/AuthRequestDialog/AuthButtonText=Authorize",
-		--	LOC "$$$/LrDialogs/Cancel=Cancel" )
-
-		--if authRequestDialogResult == 'cancel' then
-		--	return
-		--end
-
-		-- Request the frob that we need for authentication.
-
-		--propertyTable.accountStatus = LOC "$$$/DreamObjects/AccountStatus/WaitingForDreamObjects=Waiting for response from dreamhost.com..."
-
 		require 'DreamObjectsAPI'
-		--local frob = DreamObjectsAPI.openAuthUrl()
 
-        -- XXX another confirmation we probably don't need
-		--local waitForAuthDialogResult = LrDialogs.confirm(
-		--	LOC "$$$/DreamObjects/WaitForAuthDialog/Message=Return to this window once you've authorized Lightroom on flickr.com.",
-		--	LOC "$$$/DreamObjects/WaitForAuthDialog/HelpText=Once you've granted permission for Lightroom (in your web browser), click the Done button below.",
-		--	LOC "$$$/DreamObjects/WaitForAuthDialog/DoneButtonText=Done",
-		--	LOC "$$$/LrDialogs/Cancel=Cancel" )
-
-		--if waitForAuthDialogResult == 'cancel' then
-		--	return
-		--end
-
-		-- User has OK'd authentication. Get the user info.
-
-		propertyTable.accountStatus = LOC "$$$/DreamObjects/AccountStatus/WaitingForDreamObjects=Waiting for response from dreamhost.com..."
         local s3 = require('s3')
 
         -- set credentials
@@ -197,12 +166,11 @@ end
 function DreamObjectsUser.login( propertyTable )
 	if not propertyTable.LR_editingExistingPublishConnection then
 		notLoggedIn( propertyTable )
-        noBucket( propertyTable )
 	end
 
     require 'DreamObjectsAPI'
     DreamObjectsAPI.showApiKeyDialog()
-    propertyTable.validAccount = true
+    propertyTable.validKeys = true
 
 	--doingLogin = false
 	--LrFunctionContext.postAsyncTaskWithContext( 'DreamObjects login',
@@ -339,16 +307,9 @@ function DreamObjectsUser.verifyLogin( propertyTable )
 			if storedCredentialsAreValid( propertyTable ) then
 
 				propertyTable.accountStatus = LOC( "$$$/DreamObjects/AccountStatus/LoggedIn=Key pairs stored")
-
-				--if propertyTable.LR_editingExistingPublishConnection then
                 propertyTable.loginButtonTitle = LOC "$$$/DreamObjects/LoginButton/LogInAgain=Edit keys"
                 propertyTable.loginButtonEnabled = true
-                propertyTable.validAccount = true
-				--else
-				--	propertyTable.loginButtonTitle = LOC "$$$/DreamObjects/LoginButton/LoggedIn=Edit keys?"
-				--	propertyTable.loginButtonEnabled = true
-				--	propertyTable.validAccount = true
-				--end
+                propertyTable.validKeys = true
 			else
 				notLoggedIn( propertyTable )
 			end
@@ -377,16 +338,9 @@ function DreamObjectsUser.verifyBucket( propertyTable )
 			if storedBucketIsValid( propertyTable ) then
 
 				propertyTable.bucketStatus = LOC( "$$$/DreamObjects/BucketStatus/HasBucket=Bucket stored")
-
-				--if propertyTable.LR_editingExistingPublishConnection then
                 propertyTable.bucketNameTitle = LOC "$$$/DreamObjects/BucketButton/EditBucket=Edit bucket"
                 propertyTable.bucketButtonEnabled = true
                 propertyTable.validBucket = true
-				--else
-				--	propertyTable.loginButtonTitle = LOC "$$$/DreamObjects/LoginButton/LoggedIn=Edit keys?"
-				--	propertyTable.loginButtonEnabled = true
-				--	propertyTable.validAccount = true
-				--end
 			else
 				noBucket( propertyTable )
 			end
