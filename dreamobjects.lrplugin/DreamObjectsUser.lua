@@ -41,6 +41,7 @@ end
 
 local function storedBucketIsValid( propertyTable )
 	return prefs.bucket and string.len( prefs.bucket ) > 0
+		and propertyTable.validBucket
 end
 
 
@@ -69,27 +70,18 @@ end
 doingBucket = false
 
 --------------------------------------------------------------------------------
+
 function DreamObjectsUser.add_bucket( propertyTable )
     -- TODO Need to do async creation of bucket to DreamHost
 	if not propertyTable.LR_editingExistingPublishConnection then
-        noBucket( propertyTable )
-        notLoggedIn( propertyTable )
+	    noBucket( propertyTable )
 	end
     require 'DreamObjectsAPI'
     DreamObjectsAPI.showBucketDialog()
-    propertyTable.validAccount = true
 
 	LrFunctionContext.postAsyncTaskWithContext( 'DreamObjects add_bucket',
 	function( context )
 
-		-- Clear any existing login info, but only if creating new account.
-		-- If we're here on an existing connection, that's because the login
-		-- token was rejected. We need to retain existing account info so we
-		-- can cross-check it.
-        -- XXX we already did this before starting
-		--if not propertyTable.LR_editingExistingPublishConnection then
-		--	notLoggedIn( propertyTable )
-		--end
         doingBucket = true
 
 		propertyTable.bucketStatus = LOC "$$$/DreamObjects/BucketStatus/Status=Verifying bucket..."
@@ -106,9 +98,6 @@ function DreamObjectsUser.add_bucket( propertyTable )
 			if not storedCredentialsAreValid( propertyTable ) then
 				notLoggedIn( propertyTable )
 			end
-
-			-- Hrm. New API doesn't make it easy to show what operation failed.
-			-- LrDialogs.message( LOC "$$$/DreamObjects/LoginFailed=Failed to log in." )
 
 		end )
 
@@ -157,8 +146,14 @@ function DreamObjectsUser.add_bucket( propertyTable )
 
         -- get the bucket
         local bucket = s3.getBucket(prefs.bucket)
-        logger:trace('I think I got a bucket?')
-        logger:trace(bucket:list("/", "", 100))
+	if bucket:is_valid() then
+            propertyTable.BucketButtonEnabled = true
+	    propertyTable.validBucket = true
+	else
+	    propertyTable.validBucket = false
+        end
+	doingBucket = false
+
         return
 
 
