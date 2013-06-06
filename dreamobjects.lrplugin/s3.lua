@@ -473,7 +473,16 @@ function M.getBucket( bucketName )
     --    status.bucket.IsTruncated = false
     --
     ----------------------------------------------------------------------------
-    --
+
+    function s3_bucket:is_valid()
+        local url = "http://" .. self.host .. "/"
+        logger:trace(string.format("Verifying Bucket: %s", url))
+        local result, hdrs = LrHttp.get(url, headers)
+	return hdrs['status'] == 200
+    end
+
+    ----------------------------------------------------------------------------
+
     function s3_bucket:list( delimiter, prefix, max_keys, marker, onComplete )
         local httpRequest = {
             method = "GET",
@@ -485,8 +494,7 @@ function M.getBucket( bucketName )
         local url = "http://" .. self.host .. "/"
 
         logger:trace(string.format("GET on url:: %s", url))
-        logger:trace(string.format("GET on dict url:: %s", httpRequest.url))
-        local result, hdrs = LrHttp.get(url, {})--headers)
+        local result, hdrs = LrHttp.get(url, headers)
         logger:trace(string.format("Headers: %s", hdrs))
         logger:trace(string.format("Status Code: %s", hdrs['status']))
         logger:trace(string.format("result: %s", result))
