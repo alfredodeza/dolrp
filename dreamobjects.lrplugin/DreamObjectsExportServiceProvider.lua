@@ -300,8 +300,12 @@ exportServiceProvider.canExportVideo = true
 
 local function updateCantExportBecause( propertyTable )
 
-	if not propertyTable.validAccount then
-		propertyTable.LR_cantExportBecause = LOC "$$$/DreamObjects/ExportDialog/NoLogin=You haven't fully setup your DreamObjects account."
+	if not propertyTable.validKeys then
+		propertyTable.LR_cantExportBecause = LOC "$$$/DreamObjects/ExportDialog/NoLogin=Incomplete DreamObjects account setup: missing or invalid keys"
+		return
+	end
+	if not propertyTable.validBucket then
+		propertyTable.LR_cantExportBecause = LOC "$$$/DreamObjects/ExportDialog/NoLogin=Incomplete DreamObjects account setup: missing or invalid bucket"
 		return
 	end
 
@@ -396,7 +400,8 @@ function exportServiceProvider.startDialog( propertyTable )
 
 	-- Can't export until we've validated the login.
 
-	propertyTable:addObserver( 'validAccount', function() updateCantExportBecause( propertyTable ) end )
+	propertyTable:addObserver( 'validKeys', function() updateCantExportBecause( propertyTable ) end )
+	propertyTable:addObserver( 'validBucket', function() updateCantExportBecause( propertyTable ) end )
 	updateCantExportBecause( propertyTable )
 
 	-- Make sure we're logged in.
