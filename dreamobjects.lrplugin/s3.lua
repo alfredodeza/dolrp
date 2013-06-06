@@ -478,7 +478,8 @@ function M.getBucket( bucketName )
         local url = "http://" .. self.host .. "/"
         logger:trace(string.format("Verifying Bucket: %s", url))
         local result, hdrs = LrHttp.get(url, headers)
-	return hdrs['status'] == 200
+        logger:trace(string.format('Status code from service: %s', hdrs['status']))
+        return hdrs['status'] == 200 or hdrs['status'] == 403
     end
 
     ----------------------------------------------------------------------------
