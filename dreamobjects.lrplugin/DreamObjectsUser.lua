@@ -62,6 +62,8 @@ end
 local function noBucket( propertyTable )
 
     prefs.bucket = nil
+	propertyTable.bucketButtonTitle = LOC "$$$/DreamObjects/BucketButton/NoBucket=Add bucket"
+	propertyTable.bucketButtonEnabled = true
 	propertyTable.bucketNameTitle = LOC "$$$/DreamObjects/BucketButton/NoBucket=Add bucket"
 	propertyTable.bucketStatus = LOC "$$$/DreamObjects/BucketButton/HasBucket=No valid bucket"
 
@@ -119,7 +121,7 @@ function DreamObjectsUser.add_bucket( propertyTable )
 
 		-- Request the frob that we need for authentication.
 
-		propertyTable.accountStatus = LOC "$$$/DreamObjects/AccountStatus/WaitingForDreamObjects=Waiting for response from dreamhost.com..."
+		--propertyTable.accountStatus = LOC "$$$/DreamObjects/AccountStatus/WaitingForDreamObjects=Waiting for response from dreamhost.com..."
 
 		require 'DreamObjectsAPI'
 		--local frob = DreamObjectsAPI.openAuthUrl()
@@ -146,15 +148,16 @@ function DreamObjectsUser.add_bucket( propertyTable )
 
         -- get the bucket
         local bucket = s3.getBucket(prefs.bucket)
-	if bucket:is_valid() then
-            propertyTable.BucketButtonEnabled = true
-	    propertyTable.validBucket = true
-	else
-	    propertyTable.validBucket = false
+        if bucket:is_valid() then
+            propertyTable.bucketButtonEnabled = true
+            propertyTable.validBucket = true
+            propertyTable.bucketStatus = string.format('Bucket: %s', prefs.bucket)
+            propertyTable.bucketNameTitle = LOC "$$$/DreamObjects/BucketStatus/Status=Edit bucket"
+        else
+            propertyTable.validBucket = false
         end
-	doingBucket = false
+        doingBucket = false
 
-        return
 
 
 		--local data = DreamObjectsAPI.callRestMethod( propertyTable, { method = 'flickr.auth.getToken', frob = frob, suppressError = true, skipAuthToken = true } )
@@ -377,6 +380,7 @@ function DreamObjectsUser.verifyBucket( propertyTable )
 
 				--if propertyTable.LR_editingExistingPublishConnection then
                 propertyTable.bucketNameTitle = LOC "$$$/DreamObjects/BucketButton/EditBucket=Edit bucket"
+                propertyTable.bucketButtonEnabled = true
                 propertyTable.validBucket = true
 				--else
 				--	propertyTable.loginButtonTitle = LOC "$$$/DreamObjects/LoginButton/LoggedIn=Edit keys?"
