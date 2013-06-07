@@ -48,6 +48,7 @@ end
 --------------------------------------------------------------------------------
 
 local function notLoggedIn( propertyTable )
+    logger:trace("notLoggedIn being called")
 
 	prefs.apiKey = nil
 	prefs.sharedSecret = nil
@@ -60,6 +61,7 @@ local function notLoggedIn( propertyTable )
 end
 
 local function noBucket( propertyTable )
+    logger:trace("noBucket being called")
 
     prefs.bucket = nil
 	propertyTable.bucketButtonTitle = LOC "$$$/DreamObjects/BucketButton/NoBucket=Add bucket"
@@ -75,7 +77,6 @@ doingBucket = false
 --------------------------------------------------------------------------------
 
 function DreamObjectsUser.add_bucket( propertyTable )
-    -- TODO Need to do async creation of bucket to DreamHost
 	if not propertyTable.LR_editingExistingPublishConnection then
 	    noBucket( propertyTable )
 	end
@@ -124,6 +125,8 @@ function DreamObjectsUser.add_bucket( propertyTable )
             propertyTable.bucketNameTitle = LOC "$$$/DreamObjects/BucketStatus/Status=Edit bucket"
         else
             propertyTable.validBucket = false
+            propertyTable.bucketNameTitle = LOC "$$$/DreamObjects/BucketStatus/Status=Edit bucket"
+            propertyTable.bucketStatus = "Invalid bucket"
         end
         doingBucket = false
 
@@ -320,7 +323,7 @@ function DreamObjectsUser.verifyLogin( propertyTable )
 
 	end
 
-	propertyTable:addObserver( 'auth_token', updateStatus )
+	propertyTable:addObserver( 'validKeys', updateStatus )
 	updateStatus()
 
 end
@@ -349,7 +352,7 @@ function DreamObjectsUser.verifyBucket( propertyTable )
 
 	end
 
-	propertyTable:addObserver( 'auth_token', updateStatus )
+	propertyTable:addObserver( 'validBucket', updateStatus )
 	updateStatus()
 
 end
