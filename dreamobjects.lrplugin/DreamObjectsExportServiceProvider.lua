@@ -302,15 +302,11 @@ local function updateCantExportBecause( propertyTable )
 
 	if not propertyTable.validKeys then
 		propertyTable.LR_cantExportBecause = LOC "$$$/DreamObjects/ExportDialog/NoLogin=Incomplete DreamObjects account setup: missing or invalid keys"
-		return
-	end
-	if not propertyTable.validBucket then
+    elseif not propertyTable.validBucket then
 		propertyTable.LR_cantExportBecause = LOC "$$$/DreamObjects/ExportDialog/NoLogin=Incomplete DreamObjects account setup: missing or invalid bucket"
-		return
+    else
+        propertyTable.LR_cantExportBecause = nil
 	end
-
-	propertyTable.LR_cantExportBecause = nil
-
 end
 
 local displayNameForTitleChoice = {
