@@ -34,7 +34,7 @@ DreamObjectsUser = {}
 
 --------------------------------------------------------------------------------
 
-local function storedCredentialsAreValid( propertyTable )
+local function storedKeysAreValid( propertyTable )
 	return prefs.apiKey and string.len( prefs.apiKey ) > 0
 			and prefs.sharedSecret
 end
@@ -47,8 +47,8 @@ end
 
 --------------------------------------------------------------------------------
 
-local function notLoggedIn( propertyTable )
-    logger:trace("notLoggedIn being called")
+local function noKeys( propertyTable )
+    logger:trace("noKeys being called")
 
 	prefs.apiKey = nil
 	prefs.sharedSecret = nil
@@ -99,8 +99,8 @@ function DreamObjectsUser.add_bucket( propertyTable )
 
 			doingBucket = false
 
-			if not storedCredentialsAreValid( propertyTable ) then
-				notLoggedIn( propertyTable )
+			if not storedKeysAreValid( propertyTable ) then
+				noKeys( propertyTable )
 			end
 
 		end )
@@ -168,7 +168,7 @@ end
 
 function DreamObjectsUser.login( propertyTable )
 	if not propertyTable.LR_editingExistingPublishConnection then
-		notLoggedIn( propertyTable )
+		noKeys( propertyTable )
 	end
 
     require 'DreamObjectsAPI'
@@ -185,7 +185,7 @@ function DreamObjectsUser.login( propertyTable )
 	--	-- can cross-check it.
 
 	--	if not propertyTable.LR_editingExistingPublishConnection then
-	--		notLoggedIn( propertyTable )
+	--		noKeys( propertyTable )
 	--	end
 
 	--	propertyTable.accountStatus = LOC "$$$/DreamObjects/AccountStatus/LoggingIn=Logging in..."
@@ -199,8 +199,8 @@ function DreamObjectsUser.login( propertyTable )
 
 	--		doingLogin = false
 
-	--		if not storedCredentialsAreValid( propertyTable ) then
-	--			notLoggedIn( propertyTable )
+	--		if not storedKeysAreValid( propertyTable ) then
+	--			noKeys( propertyTable )
 	--		end
 
 	--		-- Hrm. New API doesn't make it easy to show what operation failed.
@@ -307,14 +307,14 @@ function DreamObjectsUser.verifyLogin( propertyTable )
 
 		LrTasks.startAsyncTask( function()
 			logger:trace( "verifyLogin: updateStatus() is executing." )
-			if storedCredentialsAreValid( propertyTable ) then
+			if storedKeysAreValid( propertyTable ) then
 
 				propertyTable.accountStatus = LOC( "$$$/DreamObjects/AccountStatus/LoggedIn=Key pairs stored")
                 propertyTable.loginButtonTitle = LOC "$$$/DreamObjects/LoginButton/LogInAgain=Edit keys"
                 propertyTable.loginButtonEnabled = true
                 propertyTable.validKeys = true
 			else
-				notLoggedIn( propertyTable )
+				noKeys( propertyTable )
 			end
 
             -- If this gets triggered it will take me to FLICKR
