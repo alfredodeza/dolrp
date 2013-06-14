@@ -403,7 +403,7 @@ function exportServiceProvider.startDialog( propertyTable )
 	-- Make sure we're logged in.
 
 	require 'DreamObjectsUser'
-	DreamObjectsUser.verifyLogin( propertyTable )
+	DreamObjectsUser.verifyKeys( propertyTable )
 	DreamObjectsUser.verifyBucket( propertyTable )
 
 end

@@ -200,15 +200,15 @@ end
 
 --------------------------------------------------------------------------------
 
-function DreamObjectsUser.verifyLogin( propertyTable )
+function DreamObjectsUser.verifyKeys( propertyTable )
 
 	-- Observe changes to prefs and update status message accordingly.
 
 	local function updateStatus()
-		logger:trace( "verifyLogin: updateStatus() was triggered." )
+		logger:trace( "verifyKeys: updateStatus() was triggered." )
 
 		LrTasks.startAsyncTask( function()
-			logger:trace( "verifyLogin: updateStatus() is executing." )
+			logger:trace( "verifyKeys: updateStatus() is executing." )
 			if storedKeysAreValid( propertyTable ) then
 
 				propertyTable.accountStatus = LOC( "$$$/DreamObjects/AccountStatus/LoggedIn=Key pairs stored")
