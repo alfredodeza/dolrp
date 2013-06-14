@@ -54,8 +54,8 @@ local function noKeys( propertyTable )
 	prefs.sharedSecret = nil
 
 	propertyTable.accountStatus = LOC "$$$/DreamObjects/AccountStatus/NotLoggedIn=No valid keys"
-	propertyTable.loginButtonTitle = LOC "$$$/DreamObjects/LoginButton/NotLoggedIn=Add keys"
-	propertyTable.loginButtonEnabled = true
+	propertyTable.keysButtonTitle = LOC "$$$/DreamObjects/keysButton/NotLoggedIn=Add keys"
+	propertyTable.keysButtonEnabled = true
 	propertyTable.validKeys = false
 
 end
@@ -166,7 +166,8 @@ function DreamObjectsUser.add_bucket( propertyTable )
 
 end
 
-function DreamObjectsUser.login( propertyTable )
+
+function DreamObjectsUser.add_keys( propertyTable )
 	if not propertyTable.LR_editingExistingPublishConnection then
 		noKeys( propertyTable )
 	end
@@ -175,107 +176,8 @@ function DreamObjectsUser.login( propertyTable )
     DreamObjectsAPI.showApiKeyDialog()
     propertyTable.validKeys = true
 
-	--doingLogin = false
-	--LrFunctionContext.postAsyncTaskWithContext( 'DreamObjects login',
-	--function( context )
-
-	--	-- Clear any existing login info, but only if creating new account.
-	--	-- If we're here on an existing connection, that's because the login
-	--	-- token was rejected. We need to retain existing account info so we
-	--	-- can cross-check it.
-
-	--	if not propertyTable.LR_editingExistingPublishConnection then
-	--		noKeys( propertyTable )
-	--	end
-
-	--	propertyTable.accountStatus = LOC "$$$/DreamObjects/AccountStatus/LoggingIn=Logging in..."
-	--	propertyTable.loginButtonEnabled = false
-
-	--	LrDialogs.attachErrorDialogToFunctionContext( context )
-
-	--	-- Make sure login is valid when done, or is marked as invalid.
-
-	--	context:addCleanupHandler( function()
-
-	--		doingLogin = false
-
-	--		if not storedKeysAreValid( propertyTable ) then
-	--			noKeys( propertyTable )
-	--		end
-
-	--		-- Hrm. New API doesn't make it easy to show what operation failed.
-	--		-- LrDialogs.message( LOC "$$$/DreamObjects/LoginFailed=Failed to log in." )
-
-	--	end )
-
-	--	-- Make sure we have an API key.
-
-	--	DreamObjectsAPI.getApiKeyAndSecret()
-
-	--	-- Show request for authentication dialog.
-
-	--	local authRequestDialogResult = LrDialogs.confirm(
-	--		LOC "$$$/DreamObjects/AuthRequestDialog/Message=Lightroom needs your permission to upload images to DreamObjects.",
-	--		LOC "$$$/DreamObjects/AuthRequestDialog/HelpText=If you click Authorize, you will be taken to a web page in your web browser where you can log in. When you're finished, return to Lightroom to complete the authorization.",
-	--		LOC "$$$/DreamObjects/AuthRequestDialog/AuthButtonText=Authorize",
-	--		LOC "$$$/LrDialogs/Cancel=Cancel" )
-
-	--	if authRequestDialogResult == 'cancel' then
-	--		return
-	--	end
-
-	--	-- Request the frob that we need for authentication.
-
-	--	propertyTable.accountStatus = LOC "$$$/DreamObjects/AccountStatus/WaitingForDreamObjects=Waiting for response from flickr.com..."
-
-	--	require 'DreamObjectsAPI'
-	--	local frob = DreamObjectsAPI.openAuthUrl()
-
-	--	local waitForAuthDialogResult = LrDialogs.confirm(
-	--		LOC "$$$/DreamObjects/WaitForAuthDialog/Message=Return to this window once you've authorized Lightroom on flickr.com.",
-	--		LOC "$$$/DreamObjects/WaitForAuthDialog/HelpText=Once you've granted permission for Lightroom (in your web browser), click the Done button below.",
-	--		LOC "$$$/DreamObjects/WaitForAuthDialog/DoneButtonText=Done",
-	--		LOC "$$$/LrDialogs/Cancel=Cancel" )
-
-	--	if waitForAuthDialogResult == 'cancel' then
-	--		return
-	--	end
-
-	--	-- User has OK'd authentication. Get the user info.
-
-	--	propertyTable.accountStatus = LOC "$$$/DreamObjects/AccountStatus/WaitingForDreamObjects=Waiting for response from flickr.com..."
-
-	--	local data = DreamObjectsAPI.callRestMethod( propertyTable, { method = 'flickr.auth.getToken', frob = frob, suppressError = true, skipAuthToken = true } )
-
-	--	local auth = data.auth
-
-	--	if not auth then
-	--		return
-	--	end
-
-	--	-- If editing existing connection, make sure user didn't try to change user ID on us.
-
-	--	if propertyTable.LR_editingExistingPublishConnection then
-
-	--		if auth.user and propertyTable.nsid ~= auth.user.nsid then
-	--			LrDialogs.message( LOC "$$$/DreamObjects/CantChangeUserID=You can not change DreamObjects accounts on an existing publish connection. Please log in again with the account you used when you first created this connection." )
-	--			return
-	--		end
-
-	--	end
-
-	--	-- Now we can read the DreamObjects user credentials. Save off to prefs.
-
-	--	propertyTable.nsid = auth.user.nsid
-	--	propertyTable.username = auth.user.username
-	--	propertyTable.fullname = auth.user.fullname
-	--	propertyTable.auth_token = auth.token._value
-
-	--	DreamObjectsUser.updateUserStatusTextBindings( propertyTable )
-
-	--end )
-
 end
+
 
 --------------------------------------------------------------------------------
 
@@ -310,8 +212,8 @@ function DreamObjectsUser.verifyLogin( propertyTable )
 			if storedKeysAreValid( propertyTable ) then
 
 				propertyTable.accountStatus = LOC( "$$$/DreamObjects/AccountStatus/LoggedIn=Key pairs stored")
-                propertyTable.loginButtonTitle = LOC "$$$/DreamObjects/LoginButton/LogInAgain=Edit keys"
-                propertyTable.loginButtonEnabled = true
+                propertyTable.keysButtonTitle = LOC "$$$/DreamObjects/keysButton/LogInAgain=Edit keys"
+                propertyTable.keysButtonEnabled = true
                 propertyTable.validKeys = true
 			else
 				noKeys( propertyTable )
@@ -378,8 +280,8 @@ end
 --
 --					settings.accountStatus = LOC( "$$$/DreamObjects/AccountStatus/LogInFailed=Log in failed, was logged in as ^1", displayUserName )
 --
---					settings.loginButtonTitle = LOC "$$$/DreamObjects/LoginButton/LogInAgain=Log In"
---					settings.loginButtonEnabled = true
+--					settings.keysButtonTitle = LOC "$$$/DreamObjects/keysButton/LogInAgain=Log In"
+--					settings.keysButtonEnabled = true
 --					settings.validAccount = false
 --
 --					settings.isUserPro = false

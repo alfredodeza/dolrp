@@ -468,12 +468,12 @@ function exportServiceProvider.sectionsForTopOfDialog( f, propertyTable )
 				},
 
 				f:push_button {
-					width = tonumber( LOC "$$$/locale_metric/DreamObjects/ExportDialog/LoginButton/Width=90" ),
-					title = bind 'loginButtonTitle',
-					enabled = bind 'loginButtonEnabled',
+					width = tonumber( LOC "$$$/locale_metric/DreamObjects/ExportDialog/keysButton/Width=90" ),
+					title = bind 'keysButtonTitle',
+					enabled = bind 'keysButtonEnabled',
 					action = function()
 					require 'DreamObjectsUser'
-					DreamObjectsUser.login( propertyTable )
+					DreamObjectsUser.add_keys( propertyTable )
 					end,
 				},
 
@@ -489,7 +489,7 @@ function exportServiceProvider.sectionsForTopOfDialog( f, propertyTable )
 				},
 
 				f:push_button {
-					width = tonumber( LOC "$$$/locale_metric/DreamObjects/ExportDialog/LoginButton/Width=90" ),
+					width = tonumber( LOC "$$$/locale_metric/DreamObjects/ExportDialog/keysButton/Width=90" ),
 					title = bind 'bucketNameTitle',
 					enabled = true,
 					action = function()
