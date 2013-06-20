@@ -41,7 +41,6 @@ end
 
 local function storedBucketIsValid( propertyTable )
 	return prefs.bucket and string.len( prefs.bucket ) > 0
-		and propertyTable.validBucket
 end
 
 
@@ -247,6 +246,7 @@ function DreamObjectsUser.verifyBucket( propertyTable )
                 propertyTable.bucketButtonEnabled = true
                 propertyTable.validBucket = true
 			else
+                logger:trace('bucket was not valid so clearing it')
 				noBucket( propertyTable )
 			end
 
