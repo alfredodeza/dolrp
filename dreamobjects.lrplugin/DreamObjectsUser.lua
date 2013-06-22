@@ -42,6 +42,7 @@ end
 
 local function storedBucketIsValid( propertyTable )
 	return prefs.bucket and string.len( prefs.bucket ) > 0
+    and propertyTable.validBucket
 end
 
 
@@ -50,8 +51,8 @@ end
 local function noKeys( propertyTable )
     logger:trace("noKeys being called")
 
-	prefs.apiKey = nil
-	prefs.sharedSecret = nil
+	--prefs.apiKey = nil
+	--prefs.sharedSecret = nil
 
 	propertyTable.accountStatus = LOC "$$$/DreamObjects/AccountStatus/NotLoggedIn=No valid keys"
 	propertyTable.keysButtonTitle = LOC "$$$/DreamObjects/keysButton/NotLoggedIn=Add keys"
@@ -63,16 +64,31 @@ end
 local function noBucket( propertyTable )
     logger:trace("noBucket being called")
 
-    prefs.bucket = nil
+    --prefs.bucket = nil
 	propertyTable.bucketButtonTitle = LOC "$$$/DreamObjects/BucketButton/NoBucket=Add bucket"
 	propertyTable.bucketButtonEnabled = true
 	propertyTable.validBucket = false
 	propertyTable.bucketNameTitle = LOC "$$$/DreamObjects/BucketButton/NoBucket=Add bucket"
-	propertyTable.bucketStatus = LOC "$$$/DreamObjects/BucketButton/HasBucket=No valid bucket"
+    if not prefs.bucket then
+        propertyTable.bucketStatus = LOC "$$$/DreamObjects/BucketButton/HasBucket=No valid bucket"
+    else
+        propertyTable.bucketStatus = LOC "$$$/DreamObjects/BucketButton/HasBucket=Invalid bucket"
+    end
 
 end
 
 doingBucket = false
+
+function DreamObjectsUser.validate_bucket( propertyTable )
+
+        local do_url =   'http://' .. prefs.bucket .. ".objects.dreamhost.com"
+        local result, hdrs = LrHttp.get( do_url )
+        logger:trace('Validating bucket against url ', do_url)
+        logger:trace('Response from bucket validation ', hdrs['status'])
+        local is_valid = hdrs['status'] == 200 or hdrs['status'] == 403
+        logger:trace('is valid value ' ,  is_valid)
+        return  hdrs['status'] == 200 or hdrs['status'] == 403
+end
 
 --------------------------------------------------------------------------------
 
@@ -99,8 +115,8 @@ function DreamObjectsUser.add_bucket( propertyTable )
             -- FIXME why are we doing keys here if we need to do bucket stuff?
 			doingBucket = false
 
-			if not storedKeysAreValid( propertyTable ) then
-				noKeys( propertyTable )
+			if not storedBucketIsValid( propertyTable ) then
+				noBucket( propertyTable )
 			end
 
 		end )
@@ -109,19 +125,21 @@ function DreamObjectsUser.add_bucket( propertyTable )
 		DreamObjectsAPI.getApiKeyAndSecret()
 
 		require 'DreamObjectsAPI'
+        local is_valid = DreamObjectsUser.validate_bucket()
+        logger:trace('receiving is_valid value ', is_valid)
 
-        local result, hdrs = LrHttp.get(  'http://' .. prefs.bucket .. ".objects.dreamhost.com")
-        local valid =  hdrs['status'] == 200 or hdrs['status'] == 403
-
-        if valid then
+        if is_valid then
             propertyTable.bucketButtonEnabled = true
             propertyTable.validBucket = true
             propertyTable.bucketStatus = string.format('Bucket: %s', prefs.bucket)
             propertyTable.bucketNameTitle = LOC "$$$/DreamObjects/BucketStatus/Status=Edit bucket"
+            logger:trace('Bucket is valid woooo!')
         else
             propertyTable.validBucket = false
             propertyTable.bucketNameTitle = LOC "$$$/DreamObjects/BucketStatus/Status=Edit bucket"
-            propertyTable.bucketStatus = "Invalid bucket"
+            propertyTable.bucketStatus = LOC( "$$$/DreamObjects/BucketStatus/HasBucket=Invalid bucket")
+            --propertyTable.bucketStatus = "Invalid bucket"
+            logger:trace('Bucket is invalid MEH')
         end
         doingBucket = false
 
@@ -211,8 +229,10 @@ function DreamObjectsUser.verifyBucket( propertyTable )
                 propertyTable.bucketButtonEnabled = true
                 propertyTable.validBucket = true
 			else
-                logger:trace('bucket was not valid so clearing it')
-				noBucket( propertyTable )
+            --    logger:trace('bucket was not valid so clearing it')
+                if not prefs.bucket then
+                    noBucket( propertyTable )
+                end
 			end
 
 		end )
