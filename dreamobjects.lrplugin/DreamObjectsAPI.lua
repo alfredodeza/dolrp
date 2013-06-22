@@ -33,7 +33,7 @@ local bind = LrView.bind
 local share = LrView.share
 
 local logger = import 'LrLogger'( 'DreamObjectsAPI' )
-
+logger:enable( 'logfile' )
 
 --============================================================================--
 
@@ -164,7 +164,7 @@ function DreamObjectsAPI.showBucketDialog( message )
 				title = LOC "$$$/DreamObjects/ApiKeyDialog/Title=Enter Your DreamObjects API Keys",
 				contents = contents,
 				accessoryView = f:push_button {
-					title = LOC "$$$/DreamObjects/ApiKeyDialog/GoToDreamObjects=Get DreamObjects API Keys...",
+					title = LOC "$$$/DreamObjects/ApiKeyDialog/GoToDreamObjects=Get DreamObjects Bucket...",
 					action = function()
 						LrHttp.openUrlInBrowser( "https://panel.dreamhost.com/index.cgi?tree=cloud.objects&" )
 					end
