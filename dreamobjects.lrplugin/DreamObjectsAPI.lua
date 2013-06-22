@@ -25,6 +25,7 @@ local LrMD5 = import 'LrMD5'
 local LrPathUtils = import 'LrPathUtils'
 local LrView = import 'LrView'
 local LrXml = import 'LrXml'
+local LrTasks = import 'LrTasks'
 
 local prefs = import 'LrPrefs'.prefsForPlugin()
 
@@ -184,10 +185,35 @@ end
 --------------------------------------------------------------------------------
 
 
+-- Some utilities to run System Commands. Can be Async or Not.
+
+--------------------------------------------------------------------------------
+
+
+function runcommand(cmd)
+        logger:trace("about to run blocking command ", cmd)
+        status = LrTasks.execute(cmd)
+        logger:trace("Status was: ", status)
+end
+
+function runAsyncCommand(cmd)
+    LrTasks.startAsyncTask( function()
+        logger:trace("about to run async command ", cmd)
+        status = LrTasks.execute(cmd)
+        logger:trace("Status was: ", status)
+    end )
+end
+
+
+
+--------------------------------------------------------------------------------
+
+
 -- We can't include a DreamObjects API key with the source code for this plug-in, so
 -- we require you obtain one on your own and enter it through this dialog.
 
 --------------------------------------------------------------------------------
+
 
 function DreamObjectsAPI.showApiKeyDialog( message )
 
@@ -445,29 +471,24 @@ function DreamObjectsAPI.callRestMethod( propertyTable, params )
 
 end
 
+
+function DreamObjectsAPI.create( fileName, filePath)
+
+    runcommand('python ' .. _PLUGIN.path .. '/s3.py create ' .. prefs.apiKey .. ' ' .. prefs.sharedSecret .. ' ' .. prefs.bucket .. ' ' .. fileName .. ' ' .. filePath)
+
+end
+
 --------------------------------------------------------------------------------
 
 function DreamObjectsAPI.uploadPhoto( propertyTable, params )
 
-	-- Prepare to upload.
-
-	assert( type( params ) == 'table', 'DreamObjectsAPI.uploadPhoto: params must be a table' )
-
-    local s3 = require('s3')
-
-    -- set credentials
-    s3.AWS_Access_Key_ID =  prefs.apiKey
-    s3.AWS_Secret_Key =  prefs.sharedSecret
-
-    -- get the bucket
-    local bucket = s3.getBucket(prefs.bucket)
-
-	logger:info( 'uploading photo', params.filePath )
-
+	logger:info( 'uploading photo ', params.filePath )
 	local filePath = params.filePath
 	local fileName = LrPathUtils.leafName( filePath )
 
-    bucket:put_file( fileName, params.filePath )
+    DreamObjectsAPI.create( fileName, filePath )
+
+    --runcommand('python ' .. _PLUGIN.path .. '/s3.py create ' .. prefs.apiKey .. ' ' .. prefs.sharedSecret .. ' ' .. prefs.bucket .. ' ' .. fileName .. ' ' .. filePath)
 
 
 	--local postUrl = params.photo_id and 'http://flickr.com/services/replace/' or 'http://flickr.com/services/upload/'
