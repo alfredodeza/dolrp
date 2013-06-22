@@ -23,7 +23,7 @@ local LrFileUtils = import 'LrFileUtils'
 local LrPathUtils = import 'LrPathUtils'
 local LrView = import 'LrView'
 local logger = import 'LrLogger'( 'DreamObjectsAPI' )
-logger:enable( 'logfile' )
+--logger:enable( 'logfile' )
 
 	-- Common shortcuts
 local bind = LrView.bind

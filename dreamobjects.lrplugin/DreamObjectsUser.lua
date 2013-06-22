@@ -24,7 +24,7 @@ local LrHttp = import 'LrHttp'
 
 local logger = import 'LrLogger'( 'DreamObjectsAPI' )
 local prefs = import 'LrPrefs'.prefsForPlugin()
-logger:enable( 'logfile' )
+--logger:enable( 'logfile' )
 
 require 'DreamObjectsAPI'
 
