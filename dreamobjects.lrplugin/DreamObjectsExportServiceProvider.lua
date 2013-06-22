@@ -1012,54 +1012,55 @@ function exportServiceProvider.processRenderedPhotos( functionContext, exportCon
 										content_type = content_type,
 										hidden = hidden,
 									} )
+                flickrPhotoId = 1
 
-				if didReplace then
+				--if didReplace then
 
-					-- The replace call used by DreamObjectsAPI.uploadPhoto ignores all of the metadata that is passed
-					-- in above. We have to manually upload that info after the fact in this case.
+				--	-- The replace call used by DreamObjectsAPI.uploadPhoto ignores all of the metadata that is passed
+				--	-- in above. We have to manually upload that info after the fact in this case.
 
-					if exportSettings.titleRepublishBehavior == 'replace' then
+				--	if exportSettings.titleRepublishBehavior == 'replace' then
 
-						DreamObjectsAPI.callRestMethod( exportSettings, {
-												method = 'flickr.photos.setMeta',
-												photo_id = flickrPhotoId,
-												title = title or '',
-												description = description or '',
-											} )
+				--		DreamObjectsAPI.callRestMethod( exportSettings, {
+				--								method = 'flickr.photos.setMeta',
+				--								photo_id = flickrPhotoId,
+				--								title = title or '',
+				--								description = description or '',
+				--							} )
 
-					end
+				--	end
 
-					DreamObjectsAPI.callRestMethod( exportSettings, {
-											method = 'flickr.photos.setPerms',
-											photo_id = flickrPhotoId,
-											is_public = is_public,
-											is_friend = is_friend,
-											is_family = is_family,
-											perm_comment = 3, -- everybody
-											perm_addmeta = 3, -- everybody
-										} )
+				--	DreamObjectsAPI.callRestMethod( exportSettings, {
+				--							method = 'flickr.photos.setPerms',
+				--							photo_id = flickrPhotoId,
+				--							is_public = is_public,
+				--							is_friend = is_friend,
+				--							is_family = is_family,
+				--							perm_comment = 3, -- everybody
+				--							perm_addmeta = 3, -- everybody
+				--						} )
 
-					DreamObjectsAPI.callRestMethod( exportSettings, {
-											method = 'flickr.photos.setSafetyLevel',
-											photo_id = flickrPhotoId,
-											safety_level = safety_level,
-											hidden = (hidden == 2) and 1 or 0,
-										} )
+				--	DreamObjectsAPI.callRestMethod( exportSettings, {
+				--							method = 'flickr.photos.setSafetyLevel',
+				--							photo_id = flickrPhotoId,
+				--							safety_level = safety_level,
+				--							hidden = (hidden == 2) and 1 or 0,
+				--						} )
 
-					DreamObjectsAPI.callRestMethod( exportSettings, {
-											method = 'flickr.photos.setContentType',
-											photo_id = flickrPhotoId,
-											content_type = content_type,
-										} )
+				--	DreamObjectsAPI.callRestMethod( exportSettings, {
+				--							method = 'flickr.photos.setContentType',
+				--							photo_id = flickrPhotoId,
+				--							content_type = content_type,
+				--						} )
 
-				end
+				--end
 
-				DreamObjectsAPI.setImageTags( exportSettings, {
-											photo_id = flickrPhotoId,
-											tags = table.concat( tags, ',' ),
-											previous_tags = previous_tags,
-											is_public = is_public,
-										} )
+				--DreamObjectsAPI.setImageTags( exportSettings, {
+				--							photo_id = flickrPhotoId,
+				--							tags = table.concat( tags, ',' ),
+				--							previous_tags = previous_tags,
+				--							is_public = is_public,
+				--						} )
 
 				-- When done with photo, delete temp file. There is a cleanup step that happens later,
 				-- but this will help manage space in the event of a large upload.
@@ -1072,68 +1073,68 @@ function exportServiceProvider.processRenderedPhotos( functionContext, exportCon
 
 				-- If this isn't the Photostream, set up the photoset.
 
-				if not photosetUrl then
+				--if not photosetUrl then
 
-					if not isDefaultCollection then
+				--	if not isDefaultCollection then
 
-						-- Create or update this photoset.
+				--		-- Create or update this photoset.
 
-						photosetId, photosetUrl = DreamObjectsAPI.createOrUpdatePhotoset( exportSettings, {
-													photosetId = photosetId,
-													title = publishedCollectionInfo.name,
-													--		description = ??,
-													primary_photo_id = uploadedPhotoIds[ 1 ],
-												} )
+				--		photosetId, photosetUrl = DreamObjectsAPI.createOrUpdatePhotoset( exportSettings, {
+				--									photosetId = photosetId,
+				--									title = publishedCollectionInfo.name,
+				--									--		description = ??,
+				--									primary_photo_id = uploadedPhotoIds[ 1 ],
+				--								} )
 
-					else
+				--	else
 
-						-- Photostream: find the URL.
+				--		-- Photostream: find the URL.
 
-						photosetUrl = DreamObjectsAPI.constructPhotostreamURL( exportSettings )
+				--		photosetUrl = DreamObjectsAPI.constructPhotostreamURL( exportSettings )
 
-					end
+				--	end
 
-				end
+				--end
 
 				-- Record this DreamObjects ID with the photo so we know to replace instead of upload.
 
-				rendition:recordPublishedPhotoId( flickrPhotoId )
+				--rendition:recordPublishedPhotoId( flickrPhotoId )
 
-				local photoUrl
+				--local photoUrl
 
-				if ( not isDefaultCollection ) then
+				--if ( not isDefaultCollection ) then
 
-					photoUrl = DreamObjectsAPI.constructPhotoURL( exportSettings, {
-											photo_id = flickrPhotoId,
-											photosetId = photosetId,
-											is_public = is_public,
-										} )
+				--	photoUrl = DreamObjectsAPI.constructPhotoURL( exportSettings, {
+				--							photo_id = flickrPhotoId,
+				--							photosetId = photosetId,
+				--							is_public = is_public,
+				--						} )
 
-					-- Add the uploaded photos to the correct photoset.
+				--	-- Add the uploaded photos to the correct photoset.
 
-					DreamObjectsAPI.addPhotosToSet( exportSettings, {
-									photoId = flickrPhotoId,
-									photosetId = photosetId,
-								} )
+				--	DreamObjectsAPI.addPhotosToSet( exportSettings, {
+				--					photoId = flickrPhotoId,
+				--					photosetId = photosetId,
+				--				} )
 
-				else
+				--else
 
-					photoUrl = DreamObjectsAPI.constructPhotoURL( exportSettings, {
-											photo_id = flickrPhotoId,
-											is_public = is_public,
-										} )
+				--	photoUrl = DreamObjectsAPI.constructPhotoURL( exportSettings, {
+				--							photo_id = flickrPhotoId,
+				--							is_public = is_public,
+				--						} )
 
-				end
+				--end
 
-				rendition:recordPublishedPhotoUrl( photoUrl )
+				--rendition:recordPublishedPhotoUrl( photoUrl )
 
 				-- Because it is common for DreamObjects users (even viewers) to add additional tags
 				-- via the DreamObjects web site, so we can avoid removing those user-added tags that
 				-- were never in Lightroom to begin with. See earlier comment.
 
-				photo.catalog:withPrivateWriteAccessDo( function()
-										photo:setPropertyForPlugin( _PLUGIN, 'previous_tags', table.concat( tags, ',' ) )
-									end )
+				--photo.catalog:withPrivateWriteAccessDo( function()
+				--						photo:setPropertyForPlugin( _PLUGIN, 'previous_tags', table.concat( tags, ',' ) )
+				--					end )
 
 			end
 
@@ -1146,19 +1147,19 @@ function exportServiceProvider.processRenderedPhotos( functionContext, exportCon
 
 	end
 
-	if #uploadedPhotoIds > 0 then
+    --if #uploadedPhotoIds > 0 then
 
-		if ( not isDefaultCollection ) then
+	--	if ( not isDefaultCollection ) then
 
-			exportSession:recordRemoteCollectionId( photosetId )
+	--		exportSession:recordRemoteCollectionId( photosetId )
 
-		end
+	--	end
 
-		-- Set up some additional metadata for this collection.
+	--	-- Set up some additional metadata for this collection.
 
-		exportSession:recordRemoteCollectionUrl( photosetUrl )
+	--	exportSession:recordRemoteCollectionUrl( photosetUrl )
 
-	end
+	--end
 
 	progressScope:done()
 
