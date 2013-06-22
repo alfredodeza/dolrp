@@ -20,6 +20,7 @@ of it requires the prior written permission of Adobe.
 local LrDialogs = import 'LrDialogs'
 local LrFunctionContext = import 'LrFunctionContext'
 local LrTasks = import 'LrTasks'
+local LrHttp = import 'LrHttp'
 
 local logger = import 'LrLogger'( 'DreamObjectsAPI' )
 local prefs = import 'LrPrefs'.prefsForPlugin()
@@ -92,10 +93,10 @@ function DreamObjectsUser.add_bucket( propertyTable )
 
 		LrDialogs.attachErrorDialogToFunctionContext( context )
 
-		-- Make sure login is valid when done, or is marked as invalid.
+		-- Make sure bucket is valid when done, or is marked as invalid.
 
 		context:addCleanupHandler( function()
-
+            -- FIXME why are we doing keys here if we need to do bucket stuff?
 			doingBucket = false
 
 			if not storedKeysAreValid( propertyTable ) then
@@ -109,15 +110,10 @@ function DreamObjectsUser.add_bucket( propertyTable )
 
 		require 'DreamObjectsAPI'
 
-        local s3 = require('s3')
+        local result, hdrs = LrHttp.get(  'http://' .. prefs.bucket .. ".objects.dreamhost.com")
+        local valid =  hdrs['status'] == 200 or hdrs['status'] == 403
 
-        -- set credentials
-        s3.AWS_Access_Key_ID =  prefs.apiKey
-        s3.AWS_Secret_Key =  prefs.sharedSecret
-
-        -- get the bucket
-        local bucket = s3.getBucket(prefs.bucket)
-        if bucket:is_valid() then
+        if valid then
             propertyTable.bucketButtonEnabled = true
             propertyTable.validBucket = true
             propertyTable.bucketStatus = string.format('Bucket: %s', prefs.bucket)
@@ -128,36 +124,6 @@ function DreamObjectsUser.add_bucket( propertyTable )
             propertyTable.bucketStatus = "Invalid bucket"
         end
         doingBucket = false
-
-
-
-		--local data = DreamObjectsAPI.callRestMethod( propertyTable, { method = 'flickr.auth.getToken', frob = frob, suppressError = true, skipAuthToken = true } )
-
-		--local auth = data.auth
-
-		--if not auth then
-		--	return
-		--end
-
-		---- If editing existing connection, make sure user didn't try to change user ID on us.
-
-		--if propertyTable.LR_editingExistingPublishConnection then
-
-		--	if auth.user and propertyTable.nsid ~= auth.user.nsid then
-		--		LrDialogs.message( LOC "$$$/DreamObjects/CantChangeUserID=You can not change DreamObjects accounts on an existing publish connection. Please log in again with the account you used when you first created this connection." )
-		--		return
-		--	end
-
-		--end
-
-		---- Now we can read the DreamObjects user credentials. Save off to prefs.
-
-		--propertyTable.nsid = auth.user.nsid
-		--propertyTable.username = auth.user.username
-		--propertyTable.fullname = auth.user.fullname
-		--propertyTable.auth_token = auth.token._value
-
-		--DreamObjectsUser.updateUserStatusTextBindings( propertyTable )
 
 	end )
 
@@ -174,7 +140,6 @@ function DreamObjectsUser.add_keys( propertyTable )
     require 'DreamObjectsAPI'
     DreamObjectsAPI.showApiKeyDialog()
     propertyTable.validKeys = true
-
 end
 
 
