@@ -22,6 +22,8 @@ local LrDialogs = import 'LrDialogs'
 local LrFileUtils = import 'LrFileUtils'
 local LrPathUtils = import 'LrPathUtils'
 local LrView = import 'LrView'
+local logger = import 'LrLogger'( 'DreamObjectsAPI' )
+logger:enable( 'logfile' )
 
 	-- Common shortcuts
 local bind = LrView.bind
@@ -838,29 +840,30 @@ function exportServiceProvider.processRenderedPhotos( functionContext, exportCon
 	for i, rendition in exportContext.exportSession:renditions() do
 
 		local flickrPhotoId = rendition.publishedPhotoId
+        logger:trace('iterating over id ' , flickrPhotoId)
 
 		if flickrPhotoId then
+            logger:trace('found this id had been published ' , flickrPhotoId)
+            logger:trace('XXX should make sure to check if it exists in DreamObjects' , flickrPhotoId)
 
 			-- Check to see if the photo is still on DreamObjects.
 
-			if not photosetPhotosSet[ flickrPhotoId ] and not isDefaultCollection then
-				flickrPhotoId = nil
-			end
+			--if not photosetPhotosSet[ flickrPhotoId ] and not isDefaultCollection then
+			--	flickrPhotoId = nil
+			--end
 
 		end
 
-		if flickrPhotoId and not exportSettings.isUserPro then
-			couldNotPublishBecauseFreeAccount[ rendition ] = true
-			cannotRepublishCount = cannotRepublishCount + 1
-		end
 
 		flickrPhotoIdsForRenditions[ rendition ] = flickrPhotoId
+        logger:trace('Setting this id for renditions ', flickrPhotoId)
 
 	end
 
 	-- If we're on a free account, see which photos are being republished and give a warning.
 
 	if cannotRepublishCount	> 0 then
+        logger:trace('we should not be here, it means cannotReplishCount is more than 1')
 
 		local message = ( cannotRepublishCount == 1 ) and
 							LOC( "$$$/DreamObjects/FreeAccountErr/Singular/ThereIsAPhotoToUpdateOnDreamObjects=There is one photo to update on DreamObjects" )
@@ -921,10 +924,14 @@ function exportServiceProvider.processRenderedPhotos( functionContext, exportCon
 		-- See if we previously uploaded this photo.
 
 		local flickrPhotoId = flickrPhotoIdsForRenditions[ rendition ]
-
+        logger:trace('flickrPhotoId ', flickrPhotoId)
 		if not rendition.wasSkipped then
 
 			local success, pathOrMessage = rendition:waitForRender()
+            local exportParams = exportContext.propertyTable
+
+            logger:trace('filepath created ', pathOrMessage)
+            logger:trace('Success from rendition ', success)
 
 			-- Update progress scope again once we've got rendered photo.
 
@@ -938,81 +945,82 @@ function exportServiceProvider.processRenderedPhotos( functionContext, exportCon
 
 				-- Build up common metadata for this photo.
 
-				local title = getDreamObjectsTitle( photo, exportSettings, pathOrMessage )
+				--local title = getDreamObjectsTitle( photo, exportSettings, pathOrMessage )
 
-				local description = photo:getFormattedMetadata( 'caption' )
-				local keywordTags = photo:getFormattedMetadata( 'keywordTagsForExport' )
+				--local description = photo:getFormattedMetadata( 'caption' )
+				--local keywordTags = photo:getFormattedMetadata( 'keywordTagsForExport' )
 
-				local tags
+				--local tags
 
-				if keywordTags then
+				--if keywordTags then
 
-					tags = {}
+				--	tags = {}
 
-					local keywordIter = string.gfind( keywordTags, "[^,]+" )
+				--	local keywordIter = string.gfind( keywordTags, "[^,]+" )
 
-					for keyword in keywordIter do
+				--	for keyword in keywordIter do
 
-						if string.sub( keyword, 1, 1 ) == ' ' then
-							keyword = string.sub( keyword, 2, -1 )
-						end
+				--		if string.sub( keyword, 1, 1 ) == ' ' then
+				--			keyword = string.sub( keyword, 2, -1 )
+				--		end
 
-						if string.find( keyword, ' ' ) ~= nil then
-							keyword = '"' .. keyword .. '"'
-						end
+				--		if string.find( keyword, ' ' ) ~= nil then
+				--			keyword = '"' .. keyword .. '"'
+				--		end
 
-						tags[ #tags + 1 ] = keyword
+				--		tags[ #tags + 1 ] = keyword
 
-					end
+				--	end
 
-				end
+				--end
 
-				-- DreamObjects will pick up LR keywords from XMP, so we don't need to merge them here.
+				---- DreamObjects will pick up LR keywords from XMP, so we don't need to merge them here.
 
-				local is_public = privacyToNumber[ exportSettings.privacy ]
-				local is_friend = booleanToNumber( exportSettings.privacy_friends )
-				local is_family = booleanToNumber( exportSettings.privacy_family )
-				local safety_level = safetyToNumber[ exportSettings.safety ]
-				local content_type = contentTypeToNumber[ exportSettings.type ]
-				local hidden = exportSettings.hideFromPublic and 2 or 1
+				--local is_public = privacyToNumber[ exportSettings.privacy ]
+				--local is_friend = booleanToNumber( exportSettings.privacy_friends )
+				--local is_family = booleanToNumber( exportSettings.privacy_family )
+				--local safety_level = safetyToNumber[ exportSettings.safety ]
+				--local content_type = contentTypeToNumber[ exportSettings.type ]
+				--local hidden = exportSettings.hideFromPublic and 2 or 1
 
-				-- Because it is common for DreamObjects users (even viewers) to add additional tags via
-				-- the DreamObjects web site, so we should not remove extra keywords that do not correspond
-				-- to keywords in Lightroom. In order to do so, we record the tags that we uploaded
-				-- this time. Next time, we will compare the previous tags with these current tags.
-				-- We use the difference between tag sets to determine if we should remove a tag (i.e.
-				-- it was one we uploaded and is no longer present in Lightroom) or not (i.e. it was
-				-- added by user on DreamObjects and never was present in Lightroom).
+				---- Because it is common for DreamObjects users (even viewers) to add additional tags via
+				---- the DreamObjects web site, so we should not remove extra keywords that do not correspond
+				---- to keywords in Lightroom. In order to do so, we record the tags that we uploaded
+				---- this time. Next time, we will compare the previous tags with these current tags.
+				---- We use the difference between tag sets to determine if we should remove a tag (i.e.
+				---- it was one we uploaded and is no longer present in Lightroom) or not (i.e. it was
+				---- added by user on DreamObjects and never was present in Lightroom).
 
-				local previous_tags = photo:getPropertyForPlugin( _PLUGIN, 'previous_tags' )
+				--local previous_tags = photo:getPropertyForPlugin( _PLUGIN, 'previous_tags' )
 
-				-- If on a free account and this photo already exists, delete it from DreamObjects.
+				---- If on a free account and this photo already exists, delete it from DreamObjects.
 
-				if flickrPhotoId and not exportSettings.isUserPro then
+				--if flickrPhotoId and not exportSettings.isUserPro then
 
-					DreamObjectsAPI.deletePhoto( exportSettings, { photoId = flickrPhotoId, suppressError = true } )
-					flickrPhotoId = nil
+				--	DreamObjectsAPI.deletePhoto( exportSettings, { photoId = flickrPhotoId, suppressError = true } )
+				--	flickrPhotoId = nil
 
-				end
+				--end
 
-				-- Upload or replace the photo.
+				---- Upload or replace the photo.
 
-				local didReplace = not not flickrPhotoId
+				--local didReplace = not not flickrPhotoId
 
-				flickrPhotoId = DreamObjectsAPI.uploadPhoto( exportSettings, {
-										photo_id = flickrPhotoId,
-										filePath = pathOrMessage,
-										title = title or '',
-										description = description,
-										tags = table.concat( tags, ',' ),
-										is_public = is_public,
-										is_friend = is_friend,
-										is_family = is_family,
-										safety_level = safety_level,
-										content_type = content_type,
-										hidden = hidden,
-									} )
-                flickrPhotoId = 1
+                DreamObjectsAPI.uploadPhoto( exportSettings, {
+                                    photo_id = flickrPhotoId,
+                                    filePath = pathOrMessage,
+                                    title = title or '',
+                                    description = description,
+                                    tags = '',
+                                    is_public = is_public,
+                                    is_friend = is_friend,
+                                    is_family = is_family,
+                                    safety_level = safety_level,
+                                    content_type = content_type,
+                                    hidden = hidden,
+                                } )
+                local fileName = LrPathUtils.leafName( pathOrMessage )
+                flickrPhotoId = fileName
 
 				--if didReplace then
 
@@ -1065,7 +1073,8 @@ function exportServiceProvider.processRenderedPhotos( functionContext, exportCon
 				-- When done with photo, delete temp file. There is a cleanup step that happens later,
 				-- but this will help manage space in the event of a large upload.
 
-				LrFileUtils.delete( pathOrMessage )
+                -- XXX DANGEROUS TO COMMENT OUT, make sure to remove.
+				--LrFileUtils.delete( pathOrMessage )
 
 				-- Remember this in the list of photos we uploaded.
 
@@ -1098,7 +1107,7 @@ function exportServiceProvider.processRenderedPhotos( functionContext, exportCon
 
 				-- Record this DreamObjects ID with the photo so we know to replace instead of upload.
 
-				--rendition:recordPublishedPhotoId( flickrPhotoId )
+				rendition:recordPublishedPhotoId( flickrPhotoId )
 
 				--local photoUrl
 
