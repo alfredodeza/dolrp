@@ -1412,38 +1412,38 @@ end
 	-- @param commentCallback (function) A callback function that your implementation should call to record
 		-- new comments for each photo; see example.
 
-function publishServiceProvider.getCommentsFromPublishedCollection( publishSettings, arrayOfPhotoInfo, commentCallback )
-
-	for i, photoInfo in ipairs( arrayOfPhotoInfo ) do
-
-		local comments = DreamObjectsAPI.getComments( publishSettings, {
-								photoId = photoInfo.remoteId,
-							} )
-
-		local commentList = {}
-
-		if comments and #comments > 0 then
-
-			for _, comment in ipairs( comments ) do
-
-				table.insert( commentList, {
-								commentId = comment.id,
-								commentText = comment.commentText,
-								dateCreated = comment.datecreate,
-								username = comment.author,
-								realname = comment.authorname,
-								url = comment.permalink
-							} )
-
-			end
-
-		end
-
-		commentCallback{ publishedPhoto = photoInfo, comments = commentList }
-
-	end
-
-end
+--function publishServiceProvider.getCommentsFromPublishedCollection( publishSettings, arrayOfPhotoInfo, commentCallback )
+--
+--	for i, photoInfo in ipairs( arrayOfPhotoInfo ) do
+--
+--		local comments = DreamObjectsAPI.getComments( publishSettings, {
+--								photoId = photoInfo.remoteId,
+--							} )
+--
+--		local commentList = {}
+--
+--		if comments and #comments > 0 then
+--
+--			for _, comment in ipairs( comments ) do
+--
+--				table.insert( commentList, {
+--								commentId = comment.id,
+--								commentText = comment.commentText,
+--								dateCreated = comment.datecreate,
+--								username = comment.author,
+--								realname = comment.authorname,
+--								url = comment.permalink
+--							} )
+--
+--			end
+--
+--		end
+--
+--		commentCallback{ publishedPhoto = photoInfo, comments = commentList }
+--
+--	end
+--
+--end
 
 --------------------------------------------------------------------------------
 --- (optional, string) This plug-in defined property allows you to customize the
@@ -1507,18 +1507,18 @@ publishServiceProvider.titleForPhotoRating = LOC "$$$/DreamObjects/TitleForPhoto
 	-- @param ratingCallback (function) A callback function that your implementation should call to record
 		-- new ratings for each photo; see example.
 
-function publishServiceProvider.getRatingsFromPublishedCollection( publishSettings, arrayOfPhotoInfo, ratingCallback )
-
-	for i, photoInfo in ipairs( arrayOfPhotoInfo ) do
-
-		local rating = DreamObjectsAPI.getNumOfFavorites( publishSettings, { photoId = photoInfo.remoteId } )
-		if type( rating ) == 'string' then rating = tonumber( rating ) end
-
-		ratingCallback{ publishedPhoto = photoInfo, rating = rating or 0 }
-
-	end
-
-end
+--function publishServiceProvider.getRatingsFromPublishedCollection( publishSettings, arrayOfPhotoInfo, ratingCallback )
+--
+--	for i, photoInfo in ipairs( arrayOfPhotoInfo ) do
+--
+--		local rating = DreamObjectsAPI.getNumOfFavorites( publishSettings, { photoId = photoInfo.remoteId } )
+--		if type( rating ) == 'string' then rating = tonumber( rating ) end
+--
+--		ratingCallback{ publishedPhoto = photoInfo, rating = rating or 0 }
+--
+--	end
+--
+--end
 
 --------------------------------------------------------------------------------
 --- (optional) This plug-in defined callback function is called whenever a
