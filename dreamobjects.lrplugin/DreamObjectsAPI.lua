@@ -349,99 +349,99 @@ function DreamObjectsAPI.callRestMethod( propertyTable, params )
 
 	-- Build up the URL for this function.
 
-	if not skipAuthToken and propertyTable then
-		params.auth_token = params.auth_token or propertyTable.auth_token
-	end
+	--if not skipAuthToken and propertyTable then
+	--	params.auth_token = params.auth_token or propertyTable.auth_token
+	--end
 
-	params.api_sig = DreamObjectsAPI.makeApiSignature( params )
-	local url = string.format( 'http://%s.objects.dreamhost.com/%s', assert(params.bucket), assert(params.object_name))
+	--params.api_sig = DreamObjectsAPI.makeApiSignature( params )
+	--local url = string.format( 'http://%s.objects.dreamhost.com/%s', assert(params.bucket), assert(params.object_name))
 
-	for name, value in pairs( params ) do
+	--for name, value in pairs( params ) do
 
-		if name ~= 'method' and value then  -- the 'and value' clause allows us to ignore false
+	--	if name ~= 'method' and value then  -- the 'and value' clause allows us to ignore false
 
-			-- URL encode each of the params.
+	--		-- URL encode each of the params.
 
-			local gsubString = '([^0-9A-Za-z])'
+	--		local gsubString = '([^0-9A-Za-z])'
 
-			value = tostring( value )
+	--		value = tostring( value )
 
-			-- 'tag_id' contains '-' symbol.
+	--		-- 'tag_id' contains '-' symbol.
 
-			if name ~= 'tag_id' then
-				value = string.gsub( value, gsubString, function( c ) return string.format( '%%%02X', string.byte( c ) ) end )
-			end
+	--		if name ~= 'tag_id' then
+	--			value = string.gsub( value, gsubString, function( c ) return string.format( '%%%02X', string.byte( c ) ) end )
+	--		end
 
-			value = string.gsub( value, ' ', '+' )
-			params[ name ] = value
+	--		value = string.gsub( value, ' ', '+' )
+	--		params[ name ] = value
 
-			url = string.format( '%s&%s=%s', url, name, value )
+	--		url = string.format( '%s&%s=%s', url, name, value )
 
-		end
+	--	end
 
-	end
+	--end
 
-	-- Call the URL and wait for response.
+	---- Call the URL and wait for response.
 
-	logger:info( 'calling DreamObjects API via URL:', url )
+	--logger:info( 'calling DreamObjects API via URL:', url )
 
-	local response, hdrs = LrHttp.get( url )
+	--local response, hdrs = LrHttp.get( url )
 
-	logger:info( 'DreamObjects response:', response )
+	--logger:info( 'DreamObjects response:', response )
 
-	if not response then
+	--if not response then
 
-		appearsAlive = false
+	--	appearsAlive = false
 
-		if suppressError then
+	--	if suppressError then
 
-			return { stat = "noresponse" }
+	--		return { stat = "noresponse" }
 
-		else
+	--	else
 
-			if hdrs and hdrs.error then
-				LrErrors.throwUserError( formatError( hdrs.error.nativeCode ) )
-			end
+	--		if hdrs and hdrs.error then
+	--			LrErrors.throwUserError( formatError( hdrs.error.nativeCode ) )
+	--		end
 
-		end
+	--	end
 
-	end
+	--end
 
-	-- Mac has different implementation with that on Windows when the server refuses the request.
+	---- Mac has different implementation with that on Windows when the server refuses the request.
 
-	if hdrs.status ~= 200 then
-		LrErrors.throwUserError( formatError( hdrs.status ) )
-	end
+	--if hdrs.status ~= 200 then
+	--	LrErrors.throwUserError( formatError( hdrs.status ) )
+	--end
 
-	appearsAlive = true
+	--appearsAlive = true
 
-	-- All responses are XML. Parse it now.
+	---- All responses are XML. Parse it now.
 
-	local simpleXml = xmlElementToSimpleTable( response )
+	--local simpleXml = xmlElementToSimpleTable( response )
 
-	if suppressErrorCodes then
+	--if suppressErrorCodes then
 
-		local errorCode = simpleXml and simpleXml.err and tonumber( simpleXml.err.code )
-		if errorCode and suppressErrorCodes[ errorCode ] then
-			suppressError = true
-		end
+	--	local errorCode = simpleXml and simpleXml.err and tonumber( simpleXml.err.code )
+	--	if errorCode and suppressErrorCodes[ errorCode ] then
+	--		suppressError = true
+	--	end
 
-	end
+	--end
 
-	if simpleXml.stat == 'ok' or suppressError then
+	--if simpleXml.stat == 'ok' or suppressError then
 
-		logger:info( 'DreamObjects API returned status ' .. simpleXml.stat )
-		return simpleXml, response
+	--	logger:info( 'DreamObjects API returned status ' .. simpleXml.stat )
+	--	return simpleXml, response
 
-	else
+	--else
 
-		logger:warn( 'DreamObjects API returned error', simpleXml.err and simpleXml.err.msg )
+	--	logger:warn( 'DreamObjects API returned error', simpleXml.err and simpleXml.err.msg )
 
-		LrErrors.throwUserError( LOC( "$$$/DreamObjects/Error/API=DreamObjects API returned an error message (function ^1, message ^2)",
-							tostring( params.method ),
-							tostring( simpleXml.err and simpleXml.err.msg ) ) )
+	--	LrErrors.throwUserError( LOC( "$$$/DreamObjects/Error/API=DreamObjects API returned an error message (function ^1, message ^2)",
+	--						tostring( params.method ),
+	--						tostring( simpleXml.err and simpleXml.err.msg ) ) )
 
-	end
+	--end
 
 end
 
@@ -453,65 +453,79 @@ function DreamObjectsAPI.uploadPhoto( propertyTable, params )
 
 	assert( type( params ) == 'table', 'DreamObjectsAPI.uploadPhoto: params must be a table' )
 
-	local postUrl = params.photo_id and 'http://flickr.com/services/replace/' or 'http://flickr.com/services/upload/'
-	local originalParams = params.photo_id and table.shallowcopy( params )
+    local s3 = require('s3')
+
+    -- set credentials
+    s3.AWS_Access_Key_ID =  prefs.apiKey
+    s3.AWS_Secret_Key =  prefs.sharedSecret
+
+    -- get the bucket
+    local bucket = s3.getBucket(prefs.bucket)
 
 	logger:info( 'uploading photo', params.filePath )
 
-	local filePath = assert( params.filePath )
-	params.filePath = nil
-
+	local filePath = params.filePath
 	local fileName = LrPathUtils.leafName( filePath )
 
-	params.auth_token = params.auth_token or propertyTable.auth_token
+    bucket:put_file( fileName, params.filePath )
 
-	params.tags = string.gsub( params.tags, ",", " " )
 
-	params.api_sig = DreamObjectsAPI.makeApiSignature( params )
+	--local postUrl = params.photo_id and 'http://flickr.com/services/replace/' or 'http://flickr.com/services/upload/'
+	--local originalParams = params.photo_id and table.shallowcopy( params )
 
-	local mimeChunks = {}
 
-	for argName, argValue in pairs( params ) do
-		if argName ~= 'api_sig' then
-			mimeChunks[ #mimeChunks + 1 ] = { name = argName, value = argValue }
-		end
-	end
+	--params.filePath = nil
 
-	mimeChunks[ #mimeChunks + 1 ] = { name = 'api_sig', value = params.api_sig }
-	mimeChunks[ #mimeChunks + 1 ] = { name = 'photo', fileName = fileName, filePath = filePath, contentType = 'application/octet-stream' }
 
-	-- Post it and wait for confirmation.
+	--params.auth_token = params.auth_token or propertyTable.auth_token
 
-	local result, hdrs = LrHttp.postMultipart( postUrl, mimeChunks )
+	--params.tags = string.gsub( params.tags, ",", " " )
 
-	if not result then
+	--params.api_sig = DreamObjectsAPI.makeApiSignature( params )
 
-		if hdrs and hdrs.error then
-			LrErrors.throwUserError( formatError( hdrs.error.nativeCode ) )
-		end
+	--local mimeChunks = {}
 
-	end
+	--for argName, argValue in pairs( params ) do
+	--	if argName ~= 'api_sig' then
+	--		mimeChunks[ #mimeChunks + 1 ] = { name = argName, value = argValue }
+	--	end
+	--end
 
-	-- Parse DreamObjects response for photo ID.
+	--mimeChunks[ #mimeChunks + 1 ] = { name = 'api_sig', value = params.api_sig }
+	--mimeChunks[ #mimeChunks + 1 ] = { name = 'photo', fileName = fileName, filePath = filePath, contentType = 'application/octet-stream' }
 
-	local simpleXml = xmlElementToSimpleTable( result )
-	if simpleXml.stat == 'ok' then
+	---- Post it and wait for confirmation.
 
-		return simpleXml.photoid._value
+	--local result, hdrs = LrHttp.postMultipart( postUrl, mimeChunks )
 
-	elseif params.photo_id and simpleXml.err and tonumber( simpleXml.err.code ) == 7 then
+	--if not result then
 
-		-- Photo is missing. Most likely, the user deleted it outside of Lightroom. Just repost it.
+	--	if hdrs and hdrs.error then
+	--		LrErrors.throwUserError( formatError( hdrs.error.nativeCode ) )
+	--	end
 
-		originalParams.photo_id = nil
-		return DreamObjectsAPI.uploadPhoto( propertyTable, originalParams )
+	--end
 
-	else
+	---- Parse DreamObjects response for photo ID.
 
-		LrErrors.throwUserError( LOC( "$$$/DreamObjects/Error/API/Upload=DreamObjects API returned an error message (function upload, message ^1)",
-							tostring( simpleXml.err and simpleXml.err.msg ) ) )
+	--local simpleXml = xmlElementToSimpleTable( result )
+	--if simpleXml.stat == 'ok' then
 
-	end
+	--	return simpleXml.photoid._value
+
+	--elseif params.photo_id and simpleXml.err and tonumber( simpleXml.err.code ) == 7 then
+
+	--	-- Photo is missing. Most likely, the user deleted it outside of Lightroom. Just repost it.
+
+	--	originalParams.photo_id = nil
+	--	return DreamObjectsAPI.uploadPhoto( propertyTable, originalParams )
+
+	--else
+
+	--	LrErrors.throwUserError( LOC( "$$$/DreamObjects/Error/API/Upload=DreamObjects API returned an error message (function upload, message ^1)",
+	--						tostring( simpleXml.err and simpleXml.err.msg ) ) )
+
+	--end
 
 end
 
@@ -819,63 +833,63 @@ end
 
 --------------------------------------------------------------------------------
 
-function DreamObjectsAPI.setPhotosetSequence( propertyTable, params )
-
-	local photosetId = assert( params.photosetId )
-	local primary = assert( params.primary )
-	local photoIds = table.concat( params.photoIds, ',' )
-
-	DreamObjectsAPI.callRestMethod( propertyTable, {
-								method = 'flickr.photosets.editPhotos',
-								photoset_id = photosetId,
-								primary_photo_id = primary,
-								photo_ids = photoIds,
-							} )
-
-end
+--function DreamObjectsAPI.setPhotosetSequence( propertyTable, params )
+--
+--	local photosetId = assert( params.photosetId )
+--	local primary = assert( params.primary )
+--	local photoIds = table.concat( params.photoIds, ',' )
+--
+--	DreamObjectsAPI.callRestMethod( propertyTable, {
+--								method = 'flickr.photosets.editPhotos',
+--								photoset_id = photosetId,
+--								primary_photo_id = primary,
+--								photo_ids = photoIds,
+--							} )
+--
+--end
 
 --------------------------------------------------------------------------------
 
-function DreamObjectsAPI.addPhotosToSet( propertyTable, params )
-
-	local data, response
-
-	-- http://flickr.com/services/api/flickr.photosets.addPhoto.html
-
-	data, response = DreamObjectsAPI.callRestMethod( propertyTable, {
-								method = 'flickr.photosets.addPhoto',
-								photoset_id = params.photosetId,
-								photo_id = params.photoId,
-								suppressError = true,
-							} )
-
-	-- If there was an error, only stop if the error was not #2 or #3 (those aren't critical).
-
-	if data.stat ~= "ok" then
-
-		if data.err then
-
-			local code = tonumber( data.err.code )
-
-			if code ~= 2 and code ~= 3 then
-
-				LrErrors.throwUserError( LOC( "$$$/DreamObjects/Error/API=DreamObjects API returned an error message (function ^1, message ^2)",
-										'flickr.photosets.addPhoto',
-										tostring( response.err and response.err.msg ) ) )
-
-			end
-
-		else
-
-			return false
-
-		end
-
-	end
-
-	return true
-
-end
+--function DreamObjectsAPI.addPhotosToSet( propertyTable, params )
+--
+--	local data, response
+--
+--	-- http://flickr.com/services/api/flickr.photosets.addPhoto.html
+--
+--	data, response = DreamObjectsAPI.callRestMethod( propertyTable, {
+--								method = 'flickr.photosets.addPhoto',
+--								photoset_id = params.photosetId,
+--								photo_id = params.photoId,
+--								suppressError = true,
+--							} )
+--
+--	-- If there was an error, only stop if the error was not #2 or #3 (those aren't critical).
+--
+--	if data.stat ~= "ok" then
+--
+--		if data.err then
+--
+--			local code = tonumber( data.err.code )
+--
+--			if code ~= 2 and code ~= 3 then
+--
+--				LrErrors.throwUserError( LOC( "$$$/DreamObjects/Error/API=DreamObjects API returned an error message (function ^1, message ^2)",
+--										'flickr.photosets.addPhoto',
+--										tostring( response.err and response.err.msg ) ) )
+--
+--			end
+--
+--		else
+--
+--			return false
+--
+--		end
+--
+--	end
+--
+--	return true
+--
+--end
 
 --------------------------------------------------------------------------------
 
@@ -896,318 +910,318 @@ end
 
 --------------------------------------------------------------------------------
 
-function DreamObjectsAPI.deletePhotoset( propertyTable, params )
-
-	-- http://flickr.com/services/api/flickr.photosets.delete.html
-
-	DreamObjectsAPI.callRestMethod( propertyTable, {
-							method = 'flickr.photosets.delete',
-							photoset_id = params.photosetId,
-							suppressError = params.suppressError,
-						} )
-
-	return true
-
-end
-
---------------------------------------------------------------------------------
-
-local function removePhotoTags( propertyTable, node, previous_tag )
-
-	local nodeType = string.lower( node:type() )
-
-	if nodeType == 'element' then
-
-		if node:name() == 'tag' then
-
-			local _, tag = traverse( node )
-
-			local rawtag = tag.raw
-
-			if string.find( rawtag, ' ' ) ~= nil then
-				rawtag = '"' .. rawtag .. '"'
-			end
-
-			if rawtag == previous_tag then
-
-				-- http://www.flickr.com/services/api/flickr.photos.removeTag.html
-
-				DreamObjectsAPI.callRestMethod( propertyTable, {
-											method = 'flickr.photos.removeTag',
-											tag_id = tag.id,
-											suppressError = true,
-										} )
-				return true
-
-			end
-
-		else
-
-			local result
-			local count = node:childCount()
-
-			for i = 1, count do
-
-				result = removePhotoTags( propertyTable, node:childAtIndex( i ), previous_tag )
-
-				if result then
-					break
-				end
-
-			end
-
-		end
-
-	end
-
-	return false
-
-end
+--function DreamObjectsAPI.deletePhotoset( propertyTable, params )
+--
+--	-- http://flickr.com/services/api/flickr.photosets.delete.html
+--
+--	DreamObjectsAPI.callRestMethod( propertyTable, {
+--							method = 'flickr.photosets.delete',
+--							photoset_id = params.photosetId,
+--							suppressError = params.suppressError,
+--						} )
+--
+--	return true
+--
+--end
 
 --------------------------------------------------------------------------------
 
-function DreamObjectsAPI.setImageTags( propertyTable, params )
-
-	-- http://www.flickr.com/services/api/flickr.photos.addTags.html
-
-	if not params.previous_tags then
-
-		local tags = string.gsub( params.tags, ",", " " )
-		DreamObjectsAPI.callRestMethod( propertyTable, {
-								method = 'flickr.photos.addTags',
-								photo_id = params.photo_id,
-								tags = tags,
-								suppressError = true,
-							} )
-
-	else
-
-		local data, response = getPhotoInfo( propertyTable, params )
-
-		if data.stat == "ok" then
-
-			for w in string.gfind( params.previous_tags, "[^,]+" ) do
-
-				local result = false
-
-				for v in string.gfind( params.tags, "[^,]+" ) do
-					if w == v then
-						result = true
-						break
-					end
-				end
-
-				if result == false then
-					removePhotoTags( propertyTable, LrXml.parseXml( response ), w )
-				end
-
-			end
-
-		end
-
-		local tags = string.gsub( params.tags, ",", " " )
-
-		DreamObjectsAPI.callRestMethod( propertyTable, {
-									method = 'flickr.photos.addTags',
-									photo_id = params.photo_id,
-									tags = tags,
-									suppressError = true,
-								} )
-
-	end
-
-	return true
-
-end
+--local function removePhotoTags( propertyTable, node, previous_tag )
+--
+--	local nodeType = string.lower( node:type() )
+--
+--	if nodeType == 'element' then
+--
+--		if node:name() == 'tag' then
+--
+--			local _, tag = traverse( node )
+--
+--			local rawtag = tag.raw
+--
+--			if string.find( rawtag, ' ' ) ~= nil then
+--				rawtag = '"' .. rawtag .. '"'
+--			end
+--
+--			if rawtag == previous_tag then
+--
+--				-- http://www.flickr.com/services/api/flickr.photos.removeTag.html
+--
+--				DreamObjectsAPI.callRestMethod( propertyTable, {
+--											method = 'flickr.photos.removeTag',
+--											tag_id = tag.id,
+--											suppressError = true,
+--										} )
+--				return true
+--
+--			end
+--
+--		else
+--
+--			local result
+--			local count = node:childCount()
+--
+--			for i = 1, count do
+--
+--				result = removePhotoTags( propertyTable, node:childAtIndex( i ), previous_tag )
+--
+--				if result then
+--					break
+--				end
+--
+--			end
+--
+--		end
+--
+--	end
+--
+--	return false
+--
+--end
 
 --------------------------------------------------------------------------------
 
-function DreamObjectsAPI.getUserInfo( propertyTable, params )
-
-	-- http://flickr.com/services/api/flickr.people.getInfo.html
-
-	local data = DreamObjectsAPI.callRestMethod( propertyTable, {
-							method = 'flickr.people.getInfo',
-							user_id = params.userId,
-						} )
-
-	return {
-		nsid = data.person.nsid,
-		isadmin = tonumber( data.person.isadmin ) ~= 0,
-		ispro = tonumber( data.person.ispro ) ~= 0,
-
-		username = data.person.username and data.person.username._value,
-		realname = data.person.realname and data.person.realname._value,
-		location = data.person.location and data.person.location._value,
-		photourl = data.person.photourl and data.person.photourl._value,
-		profileurl = data.person.profileurl and data.person.profileurl._value,
-		photos = data.person.photos and {
-			firstdate = data.person.photos.firstdate and data.person.photos.firstdate._value,
-			firstdatetaken = data.person.photos.firstdatetaken and data.person.photos.firstdatetaken._value,
-			count = data.person.photos.count and tonumber( data.person.photos.count._value ) or 0,
-		},
-	}
-
-end
-
---------------------------------------------------------------------------------
-
-function DreamObjectsAPI.getComments( propertyTable, params )
-
-	local data, response
-	local minCommentDate = params.minCommentDate and LrDate.timeToPosixDate( params.minCommentDate )
-	local maxCommentDate = params.maxCommentDate and LrDate.timeToPosixDate( params.maxCommentDate )
-
-	-- http://flickr.com/services/api/flickr.photos.comments.getList.html
-
-	data, response = DreamObjectsAPI.callRestMethod( propertyTable, {
-							method = 'flickr.photos.comments.getList',
-							photo_id = params.photoId,
-							min_comment_date = minCommentDate,
-							max_comment_date = maxCommentDate,
-							suppressError = true,
-						} )
-
-	if data.stat ~= "ok" then
-		return
-	end
-
-	local commentHeadElement = LrXml.parseXml( response )
-
-	if commentHeadElement:childCount() > 0 then
-
-		local commentsElement = commentHeadElement:childAtIndex( 1 )
-		local numOfComments = commentsElement:childCount()
-		local commentList = {}
-
-		for i = 1, numOfComments do
-
-			local commentElement = commentsElement:childAtIndex( i )
-
-			if commentElement then
-
-				local comment = {}
-				for k,v in pairs( commentElement:attributes() ) do
-					comment[ k ] = v.value
-				end
-
-				if comment.datecreate then
-					comment.datecreate = LrDate.timeFromPosixDate( comment.datecreate )
-				end
-
-				local commentText = commentElement.text and commentElement:text()
-
-				-- DreamObjects's API returns double-escaped XML characters.
-
-				commentText = commentText and commentText:gsub( '&quot;', '"' )	--"
-				commentText = commentText and commentText:gsub( '&amp;', '&' )
-				commentText = commentText and commentText:gsub( '&lt;', '<' )
-				commentText = commentText and commentText:gsub( '&gt;', '>' )
-
-				comment.commentText = commentText
-
-				commentList[ #commentList + 1 ] = comment
-
-			end
-
-		end
-
-		if #commentList > 0 then
-			return commentList
-		else
-			return nil
-		end
-
-	end
-
-end
+--function DreamObjectsAPI.setImageTags( propertyTable, params )
+--
+--	-- http://www.flickr.com/services/api/flickr.photos.addTags.html
+--
+--	if not params.previous_tags then
+--
+--		local tags = string.gsub( params.tags, ",", " " )
+--		DreamObjectsAPI.callRestMethod( propertyTable, {
+--								method = 'flickr.photos.addTags',
+--								photo_id = params.photo_id,
+--								tags = tags,
+--								suppressError = true,
+--							} )
+--
+--	else
+--
+--		local data, response = getPhotoInfo( propertyTable, params )
+--
+--		if data.stat == "ok" then
+--
+--			for w in string.gfind( params.previous_tags, "[^,]+" ) do
+--
+--				local result = false
+--
+--				for v in string.gfind( params.tags, "[^,]+" ) do
+--					if w == v then
+--						result = true
+--						break
+--					end
+--				end
+--
+--				if result == false then
+--					removePhotoTags( propertyTable, LrXml.parseXml( response ), w )
+--				end
+--
+--			end
+--
+--		end
+--
+--		local tags = string.gsub( params.tags, ",", " " )
+--
+--		DreamObjectsAPI.callRestMethod( propertyTable, {
+--									method = 'flickr.photos.addTags',
+--									photo_id = params.photo_id,
+--									tags = tags,
+--									suppressError = true,
+--								} )
+--
+--	end
+--
+--	return true
+--
+--end
+--
+----------------------------------------------------------------------------------
+--
+--function DreamObjectsAPI.getUserInfo( propertyTable, params )
+--
+--	-- http://flickr.com/services/api/flickr.people.getInfo.html
+--
+--	local data = DreamObjectsAPI.callRestMethod( propertyTable, {
+--							method = 'flickr.people.getInfo',
+--							user_id = params.userId,
+--						} )
+--
+--	return {
+--		nsid = data.person.nsid,
+--		isadmin = tonumber( data.person.isadmin ) ~= 0,
+--		ispro = tonumber( data.person.ispro ) ~= 0,
+--
+--		username = data.person.username and data.person.username._value,
+--		realname = data.person.realname and data.person.realname._value,
+--		location = data.person.location and data.person.location._value,
+--		photourl = data.person.photourl and data.person.photourl._value,
+--		profileurl = data.person.profileurl and data.person.profileurl._value,
+--		photos = data.person.photos and {
+--			firstdate = data.person.photos.firstdate and data.person.photos.firstdate._value,
+--			firstdatetaken = data.person.photos.firstdatetaken and data.person.photos.firstdatetaken._value,
+--			count = data.person.photos.count and tonumber( data.person.photos.count._value ) or 0,
+--		},
+--	}
+--
+--end
 
 --------------------------------------------------------------------------------
 
-function DreamObjectsAPI.addComment( propertyTable, params )
-
-	-- http://flickr.com/services/api/flickr.photos.comments.addComment.html
-
-	local data = DreamObjectsAPI.callRestMethod( propertyTable, {
-							method = 'flickr.photos.comments.addComment',
-							photo_id = params.photoId,
-							comment_text = params.commentText,
-							suppressError = true,
-						} )
-
-	local errCode = data.stat ~= "ok" and data.err and tonumber( data.err.code )
-	return ( data.stat == "ok" and true ) or nil, errCode
-
-end
-
---------------------------------------------------------------------------------
-
-function DreamObjectsAPI.getNumOfFavorites( propertyTable, params )
-
-	local data, response
-
-	-- http://flickr.com/services/api/flickr.photos.getFavorites.html
-
-	data, response = DreamObjectsAPI.callRestMethod( propertyTable, {
-							method = 'flickr.photos.getFavorites',
-							photo_id = params.photoId,
-							per_page = 1,
-							suppressError = true,
-						} )
-
-	logger:trace( 'getNumOfFavorites - response from DreamObjects: ', response )
-
-	if data.stat ~= "ok" then
-		return
-	end
-
-	-- Parse the results with XSLT.
-
-	local xslt = [[
-				<xsl:stylesheet
-					version="1.0"
-					xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-				>
-				<xsl:output method="text"/>
-				<xsl:template match="*">
-					return {<xsl:apply-templates />
-					}
-				</xsl:template>
-				<xsl:template match="photo">
-					photoId = "<xsl:value-of select="@id"/>",
-					total = "<xsl:value-of select="@total"/>",
-				</xsl:template>
-				</xsl:stylesheet>
-			]]
-
-	local resultElement = LrXml.parseXml( response )
-	local luaTableString = resultElement and resultElement:transform( xslt )
-	local luaTableFunction = luaTableString and loadstring( luaTableString )
-
-	if luaTableFunction then
-
-		local _, resultTable = LrFunctionContext.pcallWithEmptyEnvironment( luaTableFunction )
-
-		if resultTable then
-			return resultTable.total
-		end
-
-	end
-
-end
+--function DreamObjectsAPI.getComments( propertyTable, params )
+--
+--	local data, response
+--	local minCommentDate = params.minCommentDate and LrDate.timeToPosixDate( params.minCommentDate )
+--	local maxCommentDate = params.maxCommentDate and LrDate.timeToPosixDate( params.maxCommentDate )
+--
+--	-- http://flickr.com/services/api/flickr.photos.comments.getList.html
+--
+--	data, response = DreamObjectsAPI.callRestMethod( propertyTable, {
+--							method = 'flickr.photos.comments.getList',
+--							photo_id = params.photoId,
+--							min_comment_date = minCommentDate,
+--							max_comment_date = maxCommentDate,
+--							suppressError = true,
+--						} )
+--
+--	if data.stat ~= "ok" then
+--		return
+--	end
+--
+--	local commentHeadElement = LrXml.parseXml( response )
+--
+--	if commentHeadElement:childCount() > 0 then
+--
+--		local commentsElement = commentHeadElement:childAtIndex( 1 )
+--		local numOfComments = commentsElement:childCount()
+--		local commentList = {}
+--
+--		for i = 1, numOfComments do
+--
+--			local commentElement = commentsElement:childAtIndex( i )
+--
+--			if commentElement then
+--
+--				local comment = {}
+--				for k,v in pairs( commentElement:attributes() ) do
+--					comment[ k ] = v.value
+--				end
+--
+--				if comment.datecreate then
+--					comment.datecreate = LrDate.timeFromPosixDate( comment.datecreate )
+--				end
+--
+--				local commentText = commentElement.text and commentElement:text()
+--
+--				-- DreamObjects's API returns double-escaped XML characters.
+--
+--				commentText = commentText and commentText:gsub( '&quot;', '"' )	--"
+--				commentText = commentText and commentText:gsub( '&amp;', '&' )
+--				commentText = commentText and commentText:gsub( '&lt;', '<' )
+--				commentText = commentText and commentText:gsub( '&gt;', '>' )
+--
+--				comment.commentText = commentText
+--
+--				commentList[ #commentList + 1 ] = comment
+--
+--			end
+--
+--		end
+--
+--		if #commentList > 0 then
+--			return commentList
+--		else
+--			return nil
+--		end
+--
+--	end
+--
+--end
 
 --------------------------------------------------------------------------------
 
-function DreamObjectsAPI.testDreamObjectsConnection( propertyTable )
+--function DreamObjectsAPI.addComment( propertyTable, params )
+--
+--	-- http://flickr.com/services/api/flickr.photos.comments.addComment.html
+--
+--	local data = DreamObjectsAPI.callRestMethod( propertyTable, {
+--							method = 'flickr.photos.comments.addComment',
+--							photo_id = params.photoId,
+--							comment_text = params.commentText,
+--							suppressError = true,
+--						} )
+--
+--	local errCode = data.stat ~= "ok" and data.err and tonumber( data.err.code )
+--	return ( data.stat == "ok" and true ) or nil, errCode
+--
+--end
 
-	if appearsAlive == nil then
-		local data = DreamObjectsAPI.callRestMethod( propertyTable, {
-								method = 'flickr.test.echo',
-								suppressError = true,
-							} )
-		appearsAlive = data.stat == "ok"
-	end
+--------------------------------------------------------------------------------
 
-	return appearsAlive
+--function DreamObjectsAPI.getNumOfFavorites( propertyTable, params )
+--
+--	local data, response
+--
+--	-- http://flickr.com/services/api/flickr.photos.getFavorites.html
+--
+--	data, response = DreamObjectsAPI.callRestMethod( propertyTable, {
+--							method = 'flickr.photos.getFavorites',
+--							photo_id = params.photoId,
+--							per_page = 1,
+--							suppressError = true,
+--						} )
+--
+--	logger:trace( 'getNumOfFavorites - response from DreamObjects: ', response )
+--
+--	if data.stat ~= "ok" then
+--		return
+--	end
+--
+--	-- Parse the results with XSLT.
+--
+--	local xslt = [[
+--				<xsl:stylesheet
+--					version="1.0"
+--					xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+--				>
+--				<xsl:output method="text"/>
+--				<xsl:template match="*">
+--					return {<xsl:apply-templates />
+--					}
+--				</xsl:template>
+--				<xsl:template match="photo">
+--					photoId = "<xsl:value-of select="@id"/>",
+--					total = "<xsl:value-of select="@total"/>",
+--				</xsl:template>
+--				</xsl:stylesheet>
+--			]]
+--
+--	local resultElement = LrXml.parseXml( response )
+--	local luaTableString = resultElement and resultElement:transform( xslt )
+--	local luaTableFunction = luaTableString and loadstring( luaTableString )
+--
+--	if luaTableFunction then
+--
+--		local _, resultTable = LrFunctionContext.pcallWithEmptyEnvironment( luaTableFunction )
+--
+--		if resultTable then
+--			return resultTable.total
+--		end
+--
+--	end
+--
+--end
 
-end
+--------------------------------------------------------------------------------
+
+--function DreamObjectsAPI.testDreamObjectsConnection( propertyTable )
+--
+--	if appearsAlive == nil then
+--		local data = DreamObjectsAPI.callRestMethod( propertyTable, {
+--								method = 'flickr.test.echo',
+--								suppressError = true,
+--							} )
+--		appearsAlive = data.stat == "ok"
+--	end
+--
+--	return appearsAlive
+--
+--end
