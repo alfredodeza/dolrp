@@ -457,176 +457,160 @@ end
 	-- @name exportServiceProvider.sectionsForBottomOfDialog
 	-- @class function
 
-function exportServiceProvider.sectionsForBottomOfDialog( f, propertyTable )
-
-	return {
-
-		{
-			title = LOC "$$$/DreamObjects/ExportDialog/PrivacyAndSafety=Privacy and Safety",
-			synopsis = function( props )
-
-				local summary = {}
-
-				local function add( x )
-					if x then
-						summary[ #summary + 1 ] = x
-					end
-				end
-
-				if props.privacy == 'private' then
-					add( LOC "$$$/DreamObjects/ExportDialog/Private=Private" )
-					if props.privacy_family then
-						add( LOC "$$$/DreamObjects/ExportDialog/Family=Family" )
-					end
-					if props.privacy_friends then
-						add( LOC "$$$/DreamObjects/ExportDialog/Friends=Friends" )
-					end
-				else
-					add( LOC "$$$/DreamObjects/ExportDialog/Public=Public" )
-				end
-
-				local safetyStr = kSafetyTitles[ props.safety ]
-				if safetyStr then
-					add( safetyStr )
-				end
-
-				return table.concat( summary, " / " )
-
-			end,
-
-			place = 'horizontal',
-
-			f:column {
-				spacing = f:control_spacing() / 2,
-				fill_horizontal = 1,
-
-				f:row {
-					f:static_text {
-						title = LOC "$$$/DreamObjects/ExportDialog/Privacy=Privacy:",
-						alignment = 'right',
-						width = share 'labelWidth',
-					},
-
-					f:radio_button {
-						title = LOC "$$$/DreamObjects/ExportDialog/Private=Private",
-						checked_value = 'private',
-						value = bind 'privacy',
-					},
-				},
-
-				f:row {
-					f:spacer {
-						width = share 'labelWidth',
-					},
-
-					f:column {
-						spacing = f:control_spacing() / 2,
-						margin_left = 15,
-						margin_bottom = f:control_spacing() / 2,
-
-						f:checkbox {
-							title = LOC "$$$/DreamObjects/ExportDialog/Family=Family",
-							value = bind 'privacy_family',
-							enabled = LrBinding.keyEquals( 'privacy', 'private' ),
-						},
-
-						f:checkbox {
-							title = LOC "$$$/DreamObjects/ExportDialog/Friends=Friends",
-							value = bind 'privacy_friends',
-							enabled = LrBinding.keyEquals( 'privacy', 'private' ),
-						},
-					},
-				},
-
-				f:row {
-					f:spacer {
-						width = share 'labelWidth',
-					},
-
-					f:radio_button {
-						title = LOC "$$$/DreamObjects/ExportDialog/Public=Public",
-						checked_value = 'public',
-						value = bind 'privacy',
-					},
-				},
-			},
-
-			f:column {
-				spacing = f:control_spacing() / 2,
-
-				fill_horizontal = 1,
-
-				f:row {
-					f:static_text {
-						title = LOC "$$$/DreamObjects/ExportDialog/Safety=Safety:",
-						alignment = 'right',
-						width = share 'flickr_col2_label_width',
-					},
-
-					f:popup_menu {
-						value = bind 'safety',
-						width = share 'flickr_col2_popup_width',
-						items = {
-							{ title = kSafetyTitles.safe, value = 'safe' },
-							{ title = kSafetyTitles.moderate, value = 'moderate' },
-							{ title = kSafetyTitles.restricted, value = 'restricted' },
-						},
-					},
-				},
-
-				f:row {
-					margin_bottom = f:control_spacing() / 2,
-
-					f:spacer {
-						width = share 'flickr_col2_label_width',
-					},
-
-					f:checkbox {
-						title = LOC "$$$/DreamObjects/ExportDialog/HideFromPublicSite=Hide from public site areas",
-						value = bind 'hideFromPublic',
-					},
-				},
-
-				f:row {
-					f:static_text {
-						title = LOC "$$$/DreamObjects/ExportDialog/Type=Type:",
-						alignment = 'right',
-						width = share 'flickr_col2_label_width',
-					},
-
-					f:popup_menu {
-						width = share 'flickr_col2_popup_width',
-						value = bind 'type',
-						items = {
-							{ title = LOC "$$$/DreamObjects/ExportDialog/Type/Photo=Photo", value = 'photo' },
-							{ title = LOC "$$$/DreamObjects/ExportDialog/Type/Screenshot=Screenshot", value = 'screenshot' },
-							{ title = LOC "$$$/DreamObjects/ExportDialog/Type/Other=Other", value = 'other' },
-						},
-					},
-				},
-			},
-		},
-	}
-
-end
-
---------------------------------------------------------------------------------
---- (optional) This plug-in defined callback function is called at the beginning
- -- of each export and publish session before the rendition objects are generated.
- -- It provides an opportunity for your plug-in to modify the export settings.
- -- <p>First supported in version 2.0 of the Lightroom SDK.</p>
-	-- @param exportSettings (table) The current export settings.
-	-- @name exportServiceProvider.updateExportSettings
-	-- @class function
-
--- function exportServiceProvider.updateExportSettings( exportSettings ) -- not used for the DreamObjects sample plug-in
-
-	-- This example would cause the export to generate very low-quality JPEG files.
-
-	-- exportSettings.LR_format = 'JPEG'
-	-- exportSettings.LR_jpeg_quality = 0
-
--- end
+-- TODO: It would be nice to enable this at some point since DreamHost allows
+-- us to controll privacy
+--function exportServiceProvider.sectionsForBottomOfDialog( f, propertyTable )
+--
+--	return {
+--
+--		{
+--			title = LOC "$$$/DreamObjects/ExportDialog/PrivacyAndSafety=Privacy and Safety",
+--			synopsis = function( props )
+--
+--				local summary = {}
+--
+--				local function add( x )
+--					if x then
+--						summary[ #summary + 1 ] = x
+--					end
+--				end
+--
+--				if props.privacy == 'private' then
+--					add( LOC "$$$/DreamObjects/ExportDialog/Private=Private" )
+--					if props.privacy_family then
+--						add( LOC "$$$/DreamObjects/ExportDialog/Family=Family" )
+--					end
+--					if props.privacy_friends then
+--						add( LOC "$$$/DreamObjects/ExportDialog/Friends=Friends" )
+--					end
+--				else
+--					add( LOC "$$$/DreamObjects/ExportDialog/Public=Public" )
+--				end
+--
+--				local safetyStr = kSafetyTitles[ props.safety ]
+--				if safetyStr then
+--					add( safetyStr )
+--				end
+--
+--				return table.concat( summary, " / " )
+--
+--			end,
+--
+--			place = 'horizontal',
+--
+--			f:column {
+--				spacing = f:control_spacing() / 2,
+--				fill_horizontal = 1,
+--
+--				f:row {
+--					f:static_text {
+--						title = LOC "$$$/DreamObjects/ExportDialog/Privacy=Privacy:",
+--						alignment = 'right',
+--						width = share 'labelWidth',
+--					},
+--
+--					f:radio_button {
+--						title = LOC "$$$/DreamObjects/ExportDialog/Private=Private",
+--						checked_value = 'private',
+--						value = bind 'privacy',
+--					},
+--				},
+--
+--				f:row {
+--					f:spacer {
+--						width = share 'labelWidth',
+--					},
+--
+--					f:column {
+--						spacing = f:control_spacing() / 2,
+--						margin_left = 15,
+--						margin_bottom = f:control_spacing() / 2,
+--
+--						f:checkbox {
+--							title = LOC "$$$/DreamObjects/ExportDialog/Family=Family",
+--							value = bind 'privacy_family',
+--							enabled = LrBinding.keyEquals( 'privacy', 'private' ),
+--						},
+--
+--						f:checkbox {
+--							title = LOC "$$$/DreamObjects/ExportDialog/Friends=Friends",
+--							value = bind 'privacy_friends',
+--							enabled = LrBinding.keyEquals( 'privacy', 'private' ),
+--						},
+--					},
+--				},
+--
+--				f:row {
+--					f:spacer {
+--						width = share 'labelWidth',
+--					},
+--
+--					f:radio_button {
+--						title = LOC "$$$/DreamObjects/ExportDialog/Public=Public",
+--						checked_value = 'public',
+--						value = bind 'privacy',
+--					},
+--				},
+--			},
+--
+--			f:column {
+--				spacing = f:control_spacing() / 2,
+--
+--				fill_horizontal = 1,
+--
+--				f:row {
+--					f:static_text {
+--						title = LOC "$$$/DreamObjects/ExportDialog/Safety=Safety:",
+--						alignment = 'right',
+--						width = share 'flickr_col2_label_width',
+--					},
+--
+--					f:popup_menu {
+--						value = bind 'safety',
+--						width = share 'flickr_col2_popup_width',
+--						items = {
+--							{ title = kSafetyTitles.safe, value = 'safe' },
+--							{ title = kSafetyTitles.moderate, value = 'moderate' },
+--							{ title = kSafetyTitles.restricted, value = 'restricted' },
+--						},
+--					},
+--				},
+--
+--				f:row {
+--					margin_bottom = f:control_spacing() / 2,
+--
+--					f:spacer {
+--						width = share 'flickr_col2_label_width',
+--					},
+--
+--					f:checkbox {
+--						title = LOC "$$$/DreamObjects/ExportDialog/HideFromPublicSite=Hide from public site areas",
+--						value = bind 'hideFromPublic',
+--					},
+--				},
+--
+--				f:row {
+--					f:static_text {
+--						title = LOC "$$$/DreamObjects/ExportDialog/Type=Type:",
+--						alignment = 'right',
+--						width = share 'flickr_col2_label_width',
+--					},
+--
+--					f:popup_menu {
+--						width = share 'flickr_col2_popup_width',
+--						value = bind 'type',
+--						items = {
+--							{ title = LOC "$$$/DreamObjects/ExportDialog/Type/Photo=Photo", value = 'photo' },
+--							{ title = LOC "$$$/DreamObjects/ExportDialog/Type/Screenshot=Screenshot", value = 'screenshot' },
+--							{ title = LOC "$$$/DreamObjects/ExportDialog/Type/Other=Other", value = 'other' },
+--						},
+--					},
+--				},
+--			},
+--		},
+--	}
+--
+--end
 
 --------------------------------------------------------------------------------
 --- (optional) This plug-in defined callback function is called for each exported photo
@@ -880,6 +864,8 @@ function exportServiceProvider.processRenderedPhotos( functionContext, exportCon
                                     content_type = content_type,
                                     hidden = hidden,
                                 } )
+                -- FIXME: we need to probably do better here. A filename can't
+                -- be really the whole ID. Come on now
                 local fileName = LrPathUtils.leafName( pathOrMessage )
                 flickrPhotoId = fileName
 
@@ -1016,20 +1002,6 @@ function exportServiceProvider.processRenderedPhotos( functionContext, exportCon
 		end
 
 	end
-
-    --if #uploadedPhotoIds > 0 then
-
-	--	if ( not isDefaultCollection ) then
-
-	--		exportSession:recordRemoteCollectionId( photosetId )
-
-	--	end
-
-	--	-- Set up some additional metadata for this collection.
-
-	--	exportSession:recordRemoteCollectionUrl( photosetUrl )
-
-	--end
 
 	progressScope:done()
 
