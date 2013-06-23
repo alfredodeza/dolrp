@@ -20,8 +20,10 @@
 # OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
+Oh lua, you look so ugly::
+
     runcommand('python ' .. _PLUGIN.path .. '/s3.py create ' .. prefs.apiKey .. prefs.sharedSecret .. prefs.bucket .. fileName .. params.filePath)
-                0                               1       2            3               4                       5           6               7
+
 """
 import sys
 import boto
