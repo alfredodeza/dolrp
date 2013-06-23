@@ -24,7 +24,7 @@ local LrHttp = import 'LrHttp'
 
 local logger = import 'LrLogger'( 'DreamObjectsAPI' )
 local prefs = import 'LrPrefs'.prefsForPlugin()
---logger:enable( 'logfile' )
+logger:enable( 'logfile' )
 
 require 'DreamObjectsAPI'
 
@@ -41,8 +41,9 @@ local function storedKeysAreValid( propertyTable )
 end
 
 local function storedBucketIsValid( propertyTable )
-	return prefs.bucket and string.len( prefs.bucket ) > 0
-    and propertyTable.validBucket
+	local valid_prefs =  prefs.bucket and string.len( prefs.bucket ) > 0
+    local valid_bucket = propertyTable.validBucket == true or propertyTable.validBucket == nil
+    return valid_prefs and valid_bucket
 end
 
 
@@ -63,11 +64,10 @@ end
 
 local function noBucket( propertyTable )
     logger:trace("noBucket being called")
-
     --prefs.bucket = nil
 	propertyTable.bucketButtonTitle = LOC "$$$/DreamObjects/BucketButton/NoBucket=Add bucket"
 	propertyTable.bucketButtonEnabled = true
-	propertyTable.validBucket = false
+	--propertyTable.validBucket = false
 	propertyTable.bucketNameTitle = LOC "$$$/DreamObjects/BucketButton/NoBucket=Add bucket"
     if not prefs.bucket then
         propertyTable.bucketStatus = LOC "$$$/DreamObjects/BucketButton/HasBucket=No valid bucket"
@@ -112,10 +112,10 @@ function DreamObjectsUser.add_bucket( propertyTable )
 		-- Make sure bucket is valid when done, or is marked as invalid.
 
 		context:addCleanupHandler( function()
-            -- FIXME why are we doing keys here if we need to do bucket stuff?
 			doingBucket = false
 
 			if not storedBucketIsValid( propertyTable ) then
+                logger:trace("cleanup handler saw an invalid bucket")
 				noBucket( propertyTable )
 			end
 
@@ -138,8 +138,7 @@ function DreamObjectsUser.add_bucket( propertyTable )
             propertyTable.validBucket = false
             propertyTable.bucketNameTitle = LOC "$$$/DreamObjects/BucketStatus/Status=Edit bucket"
             propertyTable.bucketStatus = LOC( "$$$/DreamObjects/BucketStatus/HasBucket=Invalid bucket")
-            --propertyTable.bucketStatus = "Invalid bucket"
-            logger:trace('Bucket is invalid MEH')
+            propertyTable.bucketStatus = "Invalid bucket"
         end
         doingBucket = false
 
@@ -201,8 +200,6 @@ function DreamObjectsUser.verifyKeys( propertyTable )
 				noKeys( propertyTable )
 			end
 
-            -- If this gets triggered it will take me to FLICKR
-			--DreamObjectsUser.updateUserStatusTextBindings( propertyTable )
 		end )
 
 	end
@@ -218,21 +215,19 @@ function DreamObjectsUser.verifyBucket( propertyTable )
 	-- Observe changes to prefs and update status message accordingly.
 
 	local function updateStatus()
-		logger:trace( "verifyBucket: updateStatus() was triggered." )
 
 		LrTasks.startAsyncTask( function()
 			logger:trace( "verifyBucket: updateStatus() is executing." )
 			if storedBucketIsValid( propertyTable ) then
 
-				propertyTable.bucketStatus = LOC( "$$$/DreamObjects/BucketStatus/HasBucket=Bucket stored")
                 propertyTable.bucketNameTitle = LOC "$$$/DreamObjects/BucketButton/EditBucket=Edit bucket"
                 propertyTable.bucketButtonEnabled = true
                 propertyTable.validBucket = true
+                propertyTable.bucketStatus = string.format('Bucket: %s', prefs.bucket)
+
 			else
-            --    logger:trace('bucket was not valid so clearing it')
-                if not prefs.bucket then
-                    noBucket( propertyTable )
-                end
+                logger:trace('bucket was not valid so clearing it')
+                noBucket( propertyTable )
 			end
 
 		end )
