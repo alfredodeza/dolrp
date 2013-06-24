@@ -405,12 +405,12 @@ end
 
 --------------------------------------------------------------------------------
 
-function DreamObjectsAPI.deletePhoto( propertyTable, params )
+--function DreamObjectsAPI.deletePhoto( propertyTable, params )
+function DreamObjectsAPI.deletePhoto( fileName )
 
-    -- TODO: We need to be able to delete photos
-    logger:info( 'deleting photo ', params.filePath )
-    local filePath = params.filePath
-    local fileName = LrPathUtils.leafName( filePath )
+    logger:info( 'deleting photo ', fileName )
+    --local filePath = params.filePath
+    --local fileName = LrPathUtils.leafName( filePath )
 
     DreamObjectsAPI.delete( fileName )
 end
