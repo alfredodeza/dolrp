@@ -30,22 +30,28 @@ import boto
 import boto.s3.connection
 from boto.s3.key import Key
 
-command = sys.argv[1]
-access_key = sys.argv[2]
-secret_key = sys.argv[3]
-bucket_name = sys.argv[4]
-filename = sys.argv[5]
-file_path = sys.argv[6]
+def parse_args(args):
+    arguments = {'file_path': ''}
+    args_map = {0: 'script', 1: 'command', 2: 'access_key', 3: 'secret_key', 4: 'bucket_name', 5: 'filename', 6: 'file_path'}
+    for number, item in enumerate(args):
+        arguments[args_map[number]] = item
+    return arguments
+
+args = parse_args(sys.argv)
 
 conn = boto.connect_s3(
-        aws_access_key_id = access_key,
-        aws_secret_access_key = secret_key,
+        aws_access_key_id = args['access_key'],
+        aws_secret_access_key = args['secret_key'],
         host = 'objects.dreamhost.com',
         calling_format = boto.s3.connection.OrdinaryCallingFormat(),
         )
 
-if command == 'create':
-    bucket = conn.create_bucket(bucket_name)
+if args['command'] == 'create':
+    bucket = conn.create_bucket(args['bucket_name'])
     key = Key(bucket)
-    key.key = filename
-    key.set_contents_from_filename(file_path)
+    key.key = args['filename']
+    key.set_contents_from_filename(args['file_path'])
+
+if args['command'] == 'delete':
+    bucket = conn.create_bucket(args['bucket_name'])
+    bucket.delete_key(args['filename'])
