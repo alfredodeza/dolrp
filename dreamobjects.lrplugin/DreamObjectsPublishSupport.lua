@@ -532,10 +532,7 @@ end
 function publishServiceProvider.deletePhotosFromPublishedCollection( publishSettings, arrayOfPhotoIds, deletedCallback )
 
     for i, photoId in ipairs( arrayOfPhotoIds ) do
-
-        DreamObjectsAPI.deletePhoto( publishSettings, { photoId = photoId, suppressErrorCodes = { [ 1 ] = true } } )
-                            -- If DreamObjects says photo not found, ignore that.
-
+        DreamObjectsAPI.deletePhoto( photoId )
         deletedCallback( photoId )
 
     end
@@ -1318,6 +1315,7 @@ function publishServiceProvider.deletePublishedCollection( publishSettings, info
                 if progressScope:isCanceled() then break end
 
                 progressScope:setPortionComplete( i - 1, #info.photoIds )
+                logger:trace('attempting to delete a photo')
                 DreamObjectsAPI.deletePhoto( publishSettings, { photoId = photoId } )
 
             end
