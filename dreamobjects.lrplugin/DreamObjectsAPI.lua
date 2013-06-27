@@ -41,7 +41,22 @@ local appearsAlive
 --------------------------------------------------------------------------------
 
 local function formatError( nativeErrorCode )
-    return LOC "$$$/DreamObjects/Error/NetworkFailure=Could not contact the DreamObjects web service. Please check your Internet connection."
+    local error_map = { '400 Bad request',
+                        '403 Forbidden',
+                        '405 Method not Allowed',
+                        '409 Conflict',
+                        '411 Length Required',
+                        '412 Precondition Failed',
+                        '416 Request Range not satisfiable',
+                        '501 Not Implemented',
+                        '503 Service Unavailable' }
+    if error_map[ nativeErrorCode ] then
+        error_message = error_map[ nativeErrorCode ]
+    else
+        error_message = nativeErrorCode
+    end
+    return LOC("$$$/DreamObjects/Error/NetworkFailure=An error ocurred contacting the DreamObjects web service. Please check your connection, credentials or bucket. [Error: ^1]",
+                error_message)
 end
 
 --------------------------------------------------------------------------------
@@ -187,8 +202,14 @@ end
 
 function runcommand(cmd)
         logger:trace("about to run blocking command ", cmd)
-        status = LrTasks.execute(cmd)
+        status = LrTasks.execute( cmd )
         logger:trace("Status was: ", status)
+        -- this is highly idiotic: lua will multiply the exit status (256) by
+        -- the exit status of Python so we need to divide it back here
+        if not (status == 0) then
+            return status / 256
+        end
+        return status
 end
 
 function runAsyncCommand(cmd)
@@ -373,7 +394,11 @@ end
 
 function DreamObjectsAPI.create( fileName, filePath)
 
-    runcommand('python ' .. _PLUGIN.path .. '/s3.py create ' .. prefs.apiKey .. ' ' .. prefs.sharedSecret .. ' ' .. prefs.bucket .. ' ' .. fileName .. ' ' .. filePath)
+    result = runcommand('python ' .. _PLUGIN.path .. '/s3.py create ' .. prefs.apiKey .. ' ' .. prefs.sharedSecret .. ' ' .. prefs.bucket .. ' ' .. fileName .. ' ' .. filePath)
+    if not (result == 0) then
+		LrErrors.throwUserError( formatError( result ) )
+        LrErrors.throwCanceled()
+    end
 
 end
 
@@ -405,7 +430,6 @@ end
 
 --------------------------------------------------------------------------------
 
---function DreamObjectsAPI.deletePhoto( propertyTable, params )
 function DreamObjectsAPI.deletePhoto( fileName )
 
     logger:info( 'deleting photo ', fileName )
