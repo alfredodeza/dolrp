@@ -921,7 +921,7 @@ function exportServiceProvider.processRenderedPhotos( functionContext, exportCon
                 -- but this will help manage space in the event of a large upload.
 
                 -- XXX DANGEROUS TO COMMENT OUT, make sure to remove.
-                --LrFileUtils.delete( pathOrMessage )
+                LrFileUtils.delete( pathOrMessage )
 
                 -- Remember this in the list of photos we uploaded.
 
